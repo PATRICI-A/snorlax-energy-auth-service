@@ -120,6 +120,37 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!--
+                JaCoCo: instrumentación de bytecode para medir cobertura de tests.
+                Requerido por SonarQube para calcular el % de cobertura real.
+
+                La fase prepare-agent engancha el agente JaCoCo al JVM antes
+                de que Surefire ejecute los tests.
+                La fase verify (goal report) genera:
+                  · target/site/jacoco/jacoco.xml  → consumido por SonarQube
+                  · target/site/jacoco/index.html  → reporte HTML navegable
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
