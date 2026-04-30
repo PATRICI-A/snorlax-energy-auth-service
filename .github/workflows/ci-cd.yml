@@ -24,7 +24,7 @@ jobs:
   # Produce tres artefactos: JAR, reporte JaCoCo HTML/XML, Surefire XML.
   # ═══════════════════════════════════════════════════════════════════════════
   build-and-test:
-    name: "CI – Build & Test (JDK ${{ env.JAVA_VERSION }})"
+    name: "CI – Build & Test (JDK 21)"
     runs-on: ubuntu-latest
 
     steps:
