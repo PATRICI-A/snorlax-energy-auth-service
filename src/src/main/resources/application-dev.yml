@@ -1,0 +1,17 @@
+spring:
+  mongodb:
+    uri: ${MONGO_URI}
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:dev@example.com}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+mail:
+  dev-mode: ${MAIL_DEV_MODE:true}
