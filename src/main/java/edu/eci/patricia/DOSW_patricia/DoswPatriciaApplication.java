@@ -7,10 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @OpenAPIDefinition(info = @Info(title = "PATRICIA Auth Service", version = "v1"))
 @SpringBootApplication
-public class DOSWPatriciaApplication {
+public class DoswPatriciaApplication {
 
 
     public static void main(String[] args) {
-        SpringApplication.run(DOSWPatriciaApplication.class, args);
+        SpringApplication.run(DoswPatriciaApplication.class, args);
     }
 }
