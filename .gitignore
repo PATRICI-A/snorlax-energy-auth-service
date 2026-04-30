@@ -2,7 +2,7 @@
 .env
 *.env
 application-local.properties
-config/
+/config/
 
 # Maven
 target/
@@ -25,7 +25,7 @@ buildNumber.properties
 *.iws
 *.iml
 *.ipr
-out/
+/out/
 
 # VS Code
 .vscode/
