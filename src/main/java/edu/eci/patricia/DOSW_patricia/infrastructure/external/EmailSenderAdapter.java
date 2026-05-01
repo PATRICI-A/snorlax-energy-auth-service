@@ -46,4 +46,32 @@ public class EmailSenderAdapter implements EmailSenderPort {
             log.warn("[DEV MODE] Email sending failed ({}). OTP for {}: {}", e.getMessage(), to, otpCode);
         }
     }
+
+    @Override
+    public void sendPasswordReset(String to, String code) {
+        if (devMode) {
+            log.info("[DEV MODE] Password reset code for {}: {}", to, code);
+            return;
+        }
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(from);
+            message.setTo(to);
+            message.setSubject("PATRICIA - Recuperación de contraseña");
+            message.setText("""
+                    Hola,
+
+                    Recibimos una solicitud para restablecer tu contraseña en PATRICIA.
+
+                    Tu código de recuperación es: %s
+
+                    Este código es válido por 10 minutos.
+
+                    Si no solicitaste esto, ignora este mensaje. Tu contraseña no cambiará.
+                    """.formatted(code));
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.warn("[DEV MODE] Email sending failed ({}). Reset code for {}: {}", e.getMessage(), to, code);
+        }
+    }
 }
