@@ -53,15 +53,14 @@ public class AuthController {
                 .body(new RegisterResponseDto("OTP sent to email"));
     }
 
-    @Operation(summary = "Verify OTP code", description = "Validates the OTP and activates the user account")
+    @Operation(summary = "Verify OTP code", description = "Validates the OTP, activates the account and returns JWT tokens to complete registration")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Account verified successfully"),
+        @ApiResponse(responseCode = "200", description = "Account verified — tokens returned"),
         @ApiResponse(responseCode = "422", description = "Invalid or expired OTP")
     })
     @PostMapping("/verify-otp")
-    public ResponseEntity<RegisterResponseDto> verifyOtp(@Valid @RequestBody ValidateOtpRequest request) {
-        validateOtpPort.validateOtp(mapper.toValidateOtpDto(request));
-        return ResponseEntity.ok(new RegisterResponseDto("Account verified successfully"));
+    public ResponseEntity<LoginResponseDto> verifyOtp(@Valid @RequestBody ValidateOtpRequest request) {
+        return ResponseEntity.ok(validateOtpPort.validateOtp(mapper.toValidateOtpDto(request)));
     }
 
     @Operation(summary = "Login", description = "Validates credentials and returns a JWT access token plus refresh token")
