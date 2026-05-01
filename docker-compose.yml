@@ -1,4 +1,13 @@
 services:
+  mongodb:
+    image: mongo:7
+    container_name: patricia-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
   auth-service:
     build: .
     container_name: patricia-auth-service
@@ -6,4 +15,9 @@ services:
       - "9090:9090"
     env_file:
       - .env
+    depends_on:
+      - mongodb
     restart: unless-stopped
+
+volumes:
+  mongo_data:
