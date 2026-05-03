@@ -123,7 +123,7 @@ jobs:
     name: "QA – SonarQube Analysis"
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
 
     steps:
       - name: Checkout source code (full history)
@@ -221,7 +221,7 @@ jobs:
     name: "Docker – Build & Push Image"
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
 
     # Permiso de escritura en packages necesario para push a ghcr.io
     permissions:
@@ -259,14 +259,14 @@ jobs:
             type=ref,event=branch
 
       # Construye la imagen usando el Dockerfile multi-stage del proyecto.
-      # push: true sube la imagen al registry solo en builds de main.
+      # push solo ocurre en main; en PRs solo se verifica que el build funciona.
       # cache-from/cache-to reutiliza capas de builds anteriores (GitHub Cache).
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
