@@ -135,6 +135,20 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
+                <configuration>
+                    <excludes>
+                        <!-- Infrastructure: adapters y repositorios requieren MongoDB -->
+                        <exclude>edu/eci/patricia/DOSW_patricia/infrastructure/adapters/**</exclude>
+                        <!-- Entidades MongoDB: son solo contenedores de datos -->
+                        <exclude>edu/eci/patricia/DOSW_patricia/infrastructure/config/**</exclude>
+                        <!-- EmailSenderAdapter requiere servidor SMTP externo -->
+                        <exclude>edu/eci/patricia/DOSW_patricia/infrastructure/external/EmailSenderAdapter.class</exclude>
+                        <!-- MapStruct genera implementaciones automáticamente -->
+                        <exclude>edu/eci/patricia/DOSW_patricia/entrypoints/rest/mapper/**</exclude>
+                        <!-- Clase main de Spring Boot -->
+                        <exclude>edu/eci/patricia/DOSW_patricia/DoswPatriciaApplication.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
@@ -148,6 +162,26 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
