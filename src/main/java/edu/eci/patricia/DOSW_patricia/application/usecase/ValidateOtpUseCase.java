@@ -4,6 +4,7 @@ import edu.eci.patricia.DOSW_patricia.application.dto.request.ValidateOtpRequest
 import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
+import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
 import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
 import edu.eci.patricia.DOSW_patricia.domain.model.User;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.ValidateOtpPort;
@@ -42,7 +43,17 @@ public class ValidateOtpUseCase implements ValidateOtpPort {
             throw new OtpExpiredException("OTP has expired. Please request a new one");
         }
 
-        if (Boolean.TRUE.equals(otp.getUsado()) || !otp.getCodigo().equals(request.getOtp())) {
+        if (Boolean.TRUE.equals(otp.getUsado())) {
+            throw new OtpInvalidException("OTP has already been used");
+        }
+
+        if (!otp.getCodigo().equals(request.getOtp())) {
+            otp.incrementarIntentos();
+            userRepository.save(user);
+            if (otp.haAlcanzadoLimite()) {
+                throw new OtpMaxAttemptsException(
+                        "Maximum OTP attempts reached. Please request a new code via /resend-otp");
+            }
             throw new OtpInvalidException("Invalid OTP");
         }
 

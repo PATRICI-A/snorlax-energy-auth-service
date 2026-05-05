@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 public class OtpEmbedded {
 
+    private static final int MAX_ATTEMPTS = 3;
+
     private String codigo;
     private LocalDateTime expiraEn;
     private Boolean usado;
@@ -26,6 +28,14 @@ public class OtpEmbedded {
 
     public void marcaUsado() {
         this.usado = true;
+    }
+
+    public void incrementarIntentos() {
+        this.intentos = (this.intentos == null ? 0 : this.intentos) + 1;
+    }
+
+    public boolean haAlcanzadoLimite() {
+        return intentos != null && intentos >= MAX_ATTEMPTS;
     }
 
     public String getCodigo() { return codigo; }

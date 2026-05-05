@@ -74,4 +74,30 @@ class OtpEmbeddedTest {
         OtpEmbedded otp = new OtpEmbedded("999888", LocalDateTime.now().plusMinutes(10));
         assertEquals("999888", otp.getCodigo());
     }
+
+    @Test
+    void shouldIncrementIntentosOnEachCall() {
+        OtpEmbedded otp = new OtpEmbedded("123456", LocalDateTime.now().plusMinutes(10));
+        otp.incrementarIntentos();
+        assertEquals(1, otp.getIntentos());
+        otp.incrementarIntentos();
+        assertEquals(2, otp.getIntentos());
+    }
+
+    @Test
+    void shouldNotReachLimitBeforeThreeAttempts() {
+        OtpEmbedded otp = new OtpEmbedded("123456", LocalDateTime.now().plusMinutes(10));
+        otp.incrementarIntentos();
+        otp.incrementarIntentos();
+        assertFalse(otp.haAlcanzadoLimite());
+    }
+
+    @Test
+    void shouldReachLimitAfterThreeAttempts() {
+        OtpEmbedded otp = new OtpEmbedded("123456", LocalDateTime.now().plusMinutes(10));
+        otp.incrementarIntentos();
+        otp.incrementarIntentos();
+        otp.incrementarIntentos();
+        assertTrue(otp.haAlcanzadoLimite());
+    }
 }
