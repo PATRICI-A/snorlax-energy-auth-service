@@ -4,6 +4,7 @@ import edu.eci.patricia.DOSW_patricia.application.dto.request.ValidateOtpRequest
 import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
+import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
 import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
 import edu.eci.patricia.DOSW_patricia.domain.model.User;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
@@ -124,5 +125,18 @@ class ValidateOtpUseCaseTest {
                 .build();
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         assertThrows(OtpInvalidException.class, () -> validateOtpUseCase.validateOtp(dto));
+    }
+
+    @Test
+    void shouldThrowOtpMaxAttemptsExceptionAfterThreeFailedAttempts() {
+        OtpEmbedded lockedOtp = new OtpEmbedded("123456", LocalDateTime.now().plusMinutes(10));
+        lockedOtp.setIntentos(2);
+        user.setOtp(lockedOtp);
+        dto = ValidateOtpRequestDto.builder()
+                .email("student@mail.escuelaing.edu.co")
+                .otp("654321")
+                .build();
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
+        assertThrows(OtpMaxAttemptsException.class, () -> validateOtpUseCase.validateOtp(dto));
     }
 }

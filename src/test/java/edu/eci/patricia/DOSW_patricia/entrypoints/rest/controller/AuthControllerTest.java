@@ -45,6 +45,8 @@ class AuthControllerTest {
     @Mock
     private ResetPasswordPort resetPasswordPort;
     @Mock
+    private ResendOtpPort resendOtpPort;
+    @Mock
     private AuthRestMapper mapper;
 
     @InjectMocks
@@ -54,12 +56,10 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
     private LoginResponseDto loginResponse;
 
-    // JSON sin "passwordsMatch" para evitar problema de deserialización de Lombok @AssertTrue
     private static final String REGISTER_JSON = """
             {
               "email": "student@mail.escuelaing.edu.co",
               "password": "password123",
-              "confirmPassword": "password123",
               "name": "John",
               "lastName": "Doe",
               "program": "CS",
@@ -118,7 +118,7 @@ class AuthControllerTest {
                 .email("student@mail.escuelaing.edu.co").password("password123").build());
         doNothing().when(registerUserPort).register(any());
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(REGISTER_JSON))
                 .andExpect(status().isCreated())
@@ -131,7 +131,7 @@ class AuthControllerTest {
         doThrow(new UserAlreadyExistsException("Email taken"))
                 .when(registerUserPort).register(any());
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(REGISTER_JSON))
                 .andExpect(status().isConflict())
@@ -144,7 +144,7 @@ class AuthControllerTest {
         doThrow(new InvalidEmailDomainException("Bad domain"))
                 .when(registerUserPort).register(any());
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(REGISTER_JSON))
                 .andExpect(status().isBadRequest())
@@ -161,7 +161,7 @@ class AuthControllerTest {
                 .email("student@mail.escuelaing.edu.co").otp("123456").build());
         when(validateOtpPort.validateOtp(any())).thenReturn(loginResponse);
 
-        mockMvc.perform(post("/api/auth/verify-otp")
+        mockMvc.perform(post("/api/v1/auth/verify-otp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -176,7 +176,7 @@ class AuthControllerTest {
         when(validateOtpPort.validateOtp(any()))
                 .thenThrow(new OtpExpiredException("OTP expired"));
 
-        mockMvc.perform(post("/api/auth/verify-otp")
+        mockMvc.perform(post("/api/v1/auth/verify-otp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is(422))
@@ -191,7 +191,49 @@ class AuthControllerTest {
         when(validateOtpPort.validateOtp(any()))
                 .thenThrow(new OtpInvalidException("OTP invalid"));
 
-        mockMvc.perform(post("/api/auth/verify-otp")
+        mockMvc.perform(post("/api/v1/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.codigo").value("OTP_INVALID"));
+    }
+
+    @Test
+    void verifyOtpShouldReturn429WhenMaxAttemptsReached() throws Exception {
+        ValidateOtpRequest request = new ValidateOtpRequest(
+                "student@mail.escuelaing.edu.co", "999999");
+        when(mapper.toValidateOtpDto(any())).thenReturn(ValidateOtpRequestDto.builder().build());
+        when(validateOtpPort.validateOtp(any()))
+                .thenThrow(new OtpMaxAttemptsException("Maximum OTP attempts reached"));
+
+        mockMvc.perform(post("/api/v1/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.codigo").value("OTP_MAX_ATTEMPTS"));
+    }
+
+    // ── Resend OTP ────────────────────────────────────────────────────────────
+
+    @Test
+    void resendOtpShouldReturn200WhenValid() throws Exception {
+        ResendOtpRequest request = new ResendOtpRequest("student@mail.escuelaing.edu.co");
+        doNothing().when(resendOtpPort).resendOtp(anyString());
+
+        mockMvc.perform(post("/api/v1/auth/resend-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("New OTP sent to email"));
+    }
+
+    @Test
+    void resendOtpShouldReturn422WhenUserNotFound() throws Exception {
+        ResendOtpRequest request = new ResendOtpRequest("notfound@mail.escuelaing.edu.co");
+        doThrow(new OtpInvalidException("No account found"))
+                .when(resendOtpPort).resendOtp(anyString());
+
+        mockMvc.perform(post("/api/v1/auth/resend-otp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is(422))
@@ -207,7 +249,7 @@ class AuthControllerTest {
                 .email("student@mail.escuelaing.edu.co").password("password123").build());
         when(loginPort.login(any())).thenReturn(loginResponse);
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -220,7 +262,7 @@ class AuthControllerTest {
         when(mapper.toLoginDto(any())).thenReturn(LoginRequestDto.builder().build());
         when(loginPort.login(any())).thenThrow(new InvalidCredentialsException());
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -233,7 +275,7 @@ class AuthControllerTest {
         when(mapper.toLoginDto(any())).thenReturn(LoginRequestDto.builder().build());
         when(loginPort.login(any())).thenThrow(new EmailNotVerifiedException("Not verified"));
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
@@ -246,7 +288,7 @@ class AuthControllerTest {
         when(mapper.toLoginDto(any())).thenReturn(LoginRequestDto.builder().build());
         when(loginPort.login(any())).thenThrow(new CuentaBloqueadaException("Locked"));
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is(422))
@@ -260,7 +302,7 @@ class AuthControllerTest {
         RefreshTokenRequest request = new RefreshTokenRequest("valid-refresh-token");
         when(refreshTokenPort.refresh(anyString())).thenReturn(loginResponse);
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -273,7 +315,7 @@ class AuthControllerTest {
         when(refreshTokenPort.refresh(anyString()))
                 .thenThrow(new TokenInvalidException("Invalid"));
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -286,7 +328,7 @@ class AuthControllerTest {
         when(refreshTokenPort.refresh(anyString()))
                 .thenThrow(new TokenExpiredException("Expired"));
 
-        mockMvc.perform(post("/api/auth/refresh")
+        mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -299,7 +341,7 @@ class AuthControllerTest {
     void logoutShouldReturn200WhenValid() throws Exception {
         doNothing().when(logoutPort).logout(anyString());
 
-        mockMvc.perform(post("/api/auth/logout")
+        mockMvc.perform(post("/api/v1/auth/logout")
                         .header("Authorization", "Bearer access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Session closed successfully"));
@@ -312,7 +354,7 @@ class AuthControllerTest {
         ForgotPasswordRequest request = new ForgotPasswordRequest("student@mail.escuelaing.edu.co");
         doNothing().when(forgotPasswordPort).forgotPassword(anyString());
 
-        mockMvc.perform(post("/api/auth/forgot-password")
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -325,7 +367,7 @@ class AuthControllerTest {
         doThrow(new OtpInvalidException("Not found"))
                 .when(forgotPasswordPort).forgotPassword(anyString());
 
-        mockMvc.perform(post("/api/auth/forgot-password")
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is(422))
@@ -341,7 +383,7 @@ class AuthControllerTest {
                 .newPassword("newPassword123").build());
         doNothing().when(resetPasswordPort).resetPassword(any());
 
-        mockMvc.perform(post("/api/auth/reset-password")
+        mockMvc.perform(post("/api/v1/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(RESET_PASSWORD_JSON))
                 .andExpect(status().isOk())
@@ -354,7 +396,7 @@ class AuthControllerTest {
         doThrow(new OtpInvalidException("Invalid code"))
                 .when(resetPasswordPort).resetPassword(any());
 
-        mockMvc.perform(post("/api/auth/reset-password")
+        mockMvc.perform(post("/api/v1/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(RESET_PASSWORD_WRONG_CODE_JSON))
                 .andExpect(status().is(422))

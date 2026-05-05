@@ -6,6 +6,7 @@ import edu.eci.patricia.DOSW_patricia.domain.exceptions.InvalidCredentialsExcept
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.InvalidEmailDomainException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
+import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.UserAlreadyExistsException;
@@ -66,6 +67,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleOtpInvalid(OtpInvalidException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ErrorResponse.of("OTP_INVALID", ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(OtpMaxAttemptsException.class)
+    public ResponseEntity<ErrorResponse> handleOtpMaxAttempts(OtpMaxAttemptsException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ErrorResponse.of("OTP_MAX_ATTEMPTS", ex.getMessage(), null));
     }
 
     @ExceptionHandler(CuentaBloqueadaException.class)
