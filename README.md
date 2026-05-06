@@ -50,6 +50,63 @@ Incluye o referencia:
 - Diagramas de clases  
 - Diagramas de componentes  
 
+
+
+- Diagramas de Secuencia
+Un diagrama de secuencia es un tipo de diagrama UML que muestra, en orden temporal, cómo interactúan los actores y los componentes del sistema mediante mensajes o llamadas.
+
+Es importante porque permite entender el comportamiento dinámico de cada funcionalidad, validar los flujos antes de implementar, detectar errores de lógica y comunicar claramente cómo se procesa cada solicitud de extremo a extremo.
+
+
+- `RegistroDeUsuario.png`
+
+  Muestra el flujo de registro: envío de datos, validación de correo, creación del usuario y envío del OTP.
+
+    ![RegistroDeUsuario](src/main/resources/RegistroDeUsuario.png)
+
+- `ValidacionDeOTP.png`
+
+  Describe la validación del código OTP, la activación de la cuenta y la generación de tokens.
+
+    ![ValidacionDeOTP](src/main/resources/ValidacionDeOTP.png)
+
+- `InicioDeSesion.png`
+
+  Representa el inicio de sesión con validación de credenciales y emisión de access token y refresh token.
+
+    ![InicioDeSesion](src/main/resources/InicioDeSesion.png)
+
+- `CerrarSesion.png`
+
+  Explica el cierre de sesión mediante la revocación del refresh token activo.
+
+    ![CerrarSesion](src/main/resources/CerrarSesion.png)
+
+- `RenovacionDeToken.png`
+
+  Ilustra la renovación de sesión usando un refresh token válido para emitir nuevos tokens.
+
+    ![RenovacionDeToken](src/main/resources/RenovacionDeToken.png)
+
+- `ReenviarOTP.png`
+
+  Muestra el proceso para generar y reenviar un nuevo OTP cuando el anterior no es usable.
+
+    ![ReenviarOTP](src/main/resources/ReenviarOTP.png)
+
+- `RecuperarContraseña.png`
+
+  Describe la solicitud de recuperación de contraseña y el envío del código de recuperación al correo.
+
+    ![RecuperarContraseña](src/main/resources/RecuperarContraseña.png)
+
+- `ResetearContraseña.png`
+
+  Representa la validación del código de recuperación y la actualización final de la contraseña.
+
+    ![ResetearContraseña](src/main/resources/ResetearContraseña.png)
+
+
 ---
 
 ## Funcionalidades
