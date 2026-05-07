@@ -222,6 +222,9 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       # Build y push a ECR reutilizando la caché del job docker-build-push
+      # provenance: false es obligatorio para Lambda — evita que BuildKit genere
+      # un OCI Image Index (multi-manifest) que Lambda no soporta.
+      # Lambda requiere Docker Image Manifest V2, Schema 2.
       - name: Build and push image to Amazon ECR
         env:
           ECR_REGISTRY:   ${{ steps.login-ecr.outputs.registry }}
@@ -233,6 +236,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
+          provenance: false
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
