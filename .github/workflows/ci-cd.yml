@@ -1,0 +1,263 @@
+name: CI/CD – PATRICIA Auth Service
+
+# ─── TRIGGERS ────────────────────────────────────────────────────────────────
+# Push directo a las ramas principales y Pull Requests apuntando a ellas.
+# fetch-depth: 0 en el checkout es obligatorio para que SonarQube pueda
+# comparar la rama actual con la base y calcular "new code".
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+
+env:
+  JAVA_VERSION: '21'
+
+# ─── JOBS ─────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 1 – CI: Compilar y ejecutar todos los tests
+  #
+  # Ejecuta en PUSH y en PULL REQUEST.
+  # Produce tres artefactos: JAR, reporte JaCoCo HTML/XML, Surefire XML.
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-and-test:
+    name: "CI – Build & Test (JDK 21)"
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      # fetch-depth: 0 descarga el historial completo de commits.
+      # SonarQube lo necesita para el análisis de ramas incremental.
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. JDK 21 + caché Maven ──────────────────────────────────────────
+      # actions/setup-java con cache: maven guarda ~/.m2/repository entre
+      # ejecuciones usando el pom.xml como clave de caché.
+      # En builds limpios ahorra ~2–3 min de descarga de dependencias.
+      - name: Set up JDK 21 with Maven cache
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      # ── 3. mvn clean verify ───────────────────────────────────────────────
+      # `verify` ejecuta en orden: compile → test (Surefire) → verify.
+      # El plugin JaCoCo se engancha a las fases test y verify.
+      # Redis corre como service container en localhost:6379.
+      # JavaMailSender se mockea en DoswPatriciaApplicationTests.
+      - name: Run mvn clean verify
+        env:
+          JWT_SECRET:             ${{ secrets.JWT_SECRET_TEST }}
+          JWT_EXPIRATION:         '900000'
+          REDIS_HOST:             'localhost'
+          REDIS_PORT:             '6379'
+          USER_SERVICE_URL:       'http://localhost:8099'
+          MAIL_DEV_MODE:          'true'
+          MAIL_USERNAME:          'ci-noreply@example.com'
+          MAIL_PASSWORD:          'dummy-ci-password'
+          SPRING_PROFILES_ACTIVE: dev
+        run: mvn clean verify -B
+
+      # ── 4. Artefacto: reporte de cobertura JaCoCo ─────────────────────────
+      # `if: always()` sube el reporte incluso si los tests fallan,
+      # para poder analizar qué líneas se ejecutaron antes del fallo.
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+      # ── 5. Artefacto: reportes XML de Surefire ────────────────────────────
+      # GitHub Actions puede interpretar estos XMLs en la pestaña "Tests"
+      # del resumen del workflow con la action mikepenz/action-junit-report.
+      - name: Upload Surefire test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+      # ── 6. Artefacto: JAR ejecutable ─────────────────────────────────────
+      # El JAR generado por Spring Boot (fat jar) se conserva para
+      # descarga manual o para usarlo en un job de despliegue futuro.
+      - name: Upload application JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-jar
+          path: target/auth-service-*.jar
+          retention-days: 14
+
+
+
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 3 – Docker: Construir y publicar la imagen de contenedor
+  #
+  # Solo se ejecuta en PUSH a la rama main (imagen de producción).
+  # Usa GitHub Container Registry (ghcr.io). Para usar Docker Hub,
+  # sustituye registry por docker.io y los secrets correspondientes.
+  #
+  # La caché de BuildKit (type=gha) reutiliza capas entre builds,
+  # reduciendo el tiempo de construcción cuando solo cambia el JAR.
+  # ═══════════════════════════════════════════════════════════════════════════
+  docker-build-push:
+    name: "Docker – Build & Push Image"
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+
+    # Permiso de escritura en packages necesario para push a ghcr.io
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Buildx activa BuildKit (multi-platform, caché avanzada, secrets)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Autenticación con GitHub Container Registry usando el token automático
+      - name: Login to GitHub Container Registry (ghcr.io)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Genera tags semánticos automáticamente:
+      #   latest    → solo en rama main
+      #   sha-<git> → commit exacto, inmutable, útil para rollback
+      #   main      → nombre de la rama
+      - name: Extract Docker image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=ref,event=branch
+
+      # Construye la imagen usando el Dockerfile multi-stage del proyecto.
+      # push solo ocurre en main; en PRs solo se verifica que el build funciona.
+      # cache-from/cache-to reutiliza capas de builds anteriores (GitHub Cache).
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 4 – Deploy: Publicar imagen en Amazon ECR y actualizar AWS Lambda
+  #
+  # Solo se ejecuta en PUSH a main, después del job docker-build-push.
+  # Reutiliza la caché de BuildKit (type=gha) generada por el job anterior,
+  # por lo que el build de ECR es casi instantáneo.
+  #
+  # Secrets requeridos en el repositorio:
+  #   AWS_ACCESS_KEY_ID       → clave de acceso (AWS Academy: aws_access_key_id)
+  #   AWS_SECRET_ACCESS_KEY   → secreto (AWS Academy: aws_secret_access_key)
+  #   AWS_SESSION_TOKEN       → token de sesión (obligatorio en AWS Academy)
+  #   AWS_REGION              → región AWS, ej: us-east-1
+  #   ECR_REPOSITORY          → nombre del repo ECR, ej: auth-service
+  #   LAMBDA_FUNCTION_NAME    → nombre de la función Lambda
+  #
+  # NOTA AWS Academy: las credenciales son temporales (~4h). Actualizar los
+  # secrets AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY y AWS_SESSION_TOKEN
+  # cada vez que se inicie una nueva sesión de laboratorio.
+  # ═══════════════════════════════════════════════════════════════════════════
+  deploy-to-aws-lambda:
+    name: "Deploy – AWS Lambda"
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Build y push a ECR reutilizando la caché del job docker-build-push
+      - name: Build and push image to Amazon ECR
+        env:
+          ECR_REGISTRY:   ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG:      ${{ github.sha }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      # Apunta la función Lambda a la nueva imagen
+      - name: Update Lambda function image
+        env:
+          ECR_REGISTRY:   ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG:      ${{ github.sha }}
+        run: |
+          aws lambda update-function-code \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --image-uri "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      # Espera a que Lambda termine de actualizar antes de dar por exitoso el deploy
+      - name: Wait for Lambda update to complete
+        run: |
+          aws lambda wait function-updated \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}"
+
+      - name: Show deployed Lambda status
+        run: |
+          aws lambda get-function \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --query 'Configuration.[FunctionName,LastModified,State,PackageType]' \
+            --output table
