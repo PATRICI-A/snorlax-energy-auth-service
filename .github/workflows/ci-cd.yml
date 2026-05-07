@@ -27,6 +27,17 @@ jobs:
     name: "CI – Build & Test (JDK 21)"
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────
       # fetch-depth: 0 descarga el historial completo de commits.
@@ -49,25 +60,16 @@ jobs:
 
       # ── 3. mvn clean verify ───────────────────────────────────────────────
       # `verify` ejecuta en orden: compile → test (Surefire) → verify.
-      # El plugin JaCoCo (añadido al pom.xml) se engancha a las fases
-      # test y verify para instrumentar el bytecode y generar el reporte.
-      #
-      # Variables de entorno:
-      #   MONGO_URI_TEST   → secret de GitHub apuntando a un cluster de
-      #                      pruebas en Atlas (distinto del de producción).
-      #   MAIL_DEV_MODE    → 'true' evita que el EmailSenderAdapter envíe
-      #                      correos reales durante los tests.
-      #   JWT_SECRET_TEST  → puede ser cualquier cadena ≥ 32 chars en CI.
-      #
-      # NOTA: Si prefieres no depender de Atlas en CI, añade la dependencia
-      # de Flapdoodle Embedded MongoDB (scope test) en el pom.xml:
-      #   de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.13.0
-      # y Spring Boot levantará un MongoDB embebido automáticamente.
+      # El plugin JaCoCo se engancha a las fases test y verify.
+      # Redis corre como service container en localhost:6379.
+      # JavaMailSender se mockea en DoswPatriciaApplicationTests.
       - name: Run mvn clean verify
         env:
-          MONGO_URI:              ${{ secrets.MONGO_URI_TEST }}
           JWT_SECRET:             ${{ secrets.JWT_SECRET_TEST }}
           JWT_EXPIRATION:         '900000'
+          REDIS_HOST:             'localhost'
+          REDIS_PORT:             '6379'
+          USER_SERVICE_URL:       'http://localhost:8099'
           MAIL_DEV_MODE:          'true'
           MAIL_USERNAME:          'ci-noreply@example.com'
           MAIL_PASSWORD:          'dummy-ci-password'

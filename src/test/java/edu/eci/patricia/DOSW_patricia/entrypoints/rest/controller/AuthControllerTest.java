@@ -11,6 +11,7 @@ import edu.eci.patricia.DOSW_patricia.domain.ports.in.*;
 import edu.eci.patricia.DOSW_patricia.entrypoints.advice.GlobalExceptionHandler;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.mapper.AuthRestMapper;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.*;
+import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,24 +31,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
-    @Mock
-    private RegisterUserPort registerUserPort;
-    @Mock
-    private ValidateOtpPort validateOtpPort;
-    @Mock
-    private LoginPort loginPort;
-    @Mock
-    private RefreshTokenPort refreshTokenPort;
-    @Mock
-    private LogoutPort logoutPort;
-    @Mock
-    private ForgotPasswordPort forgotPasswordPort;
-    @Mock
-    private ResetPasswordPort resetPasswordPort;
-    @Mock
-    private ResendOtpPort resendOtpPort;
-    @Mock
-    private AuthRestMapper mapper;
+    @Mock private InitVerificationPort initVerificationPort;
+    @Mock private ValidateOtpPort validateOtpPort;
+    @Mock private LoginPort loginPort;
+    @Mock private RefreshTokenPort refreshTokenPort;
+    @Mock private LogoutPort logoutPort;
+    @Mock private ForgotPasswordPort forgotPasswordPort;
+    @Mock private ResetPasswordPort resetPasswordPort;
+    @Mock private ResendOtpPort resendOtpPort;
+    @Mock private ChangePasswordPort changePasswordPort;
+    @Mock private AuthRestMapper mapper;
+    @Mock private JwtService jwtService;
 
     @InjectMocks
     private AuthController authController;
@@ -56,19 +50,10 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
     private LoginResponseDto loginResponse;
 
-    private static final String REGISTER_JSON = """
+    private static final String INIT_VERIFICATION_JSON = """
             {
               "email": "student@mail.escuelaing.edu.co",
-              "password": "password123",
-              "name": "John",
-              "lastName": "Doe",
-              "program": "CS",
-              "semester": 4,
-              "interests": ["MUSIC", "PROGRAMMING", "PHOTOGRAPHY"],
-              "bio": "bio",
-              "birthDate": "2000-01-01",
-              "gender": "MALE",
-              "profileVisibility": "PUBLIC"
+              "hashedPassword": "$2a$10$SomeHashedPasswordValue"
             }
             """;
 
@@ -87,6 +72,13 @@ class AuthControllerTest {
               "code": "000000",
               "newPassword": "newPassword123",
               "confirmPassword": "newPassword123"
+            }
+            """;
+
+    private static final String CHANGE_PASSWORD_JSON = """
+            {
+              "currentPassword": "OldPass123!",
+              "newPassword": "NewPass456!"
             }
             """;
 
@@ -110,43 +102,30 @@ class AuthControllerTest {
                 .build();
     }
 
-    // ── Register ──────────────────────────────────────────────────────────────
+    // ── Init Verification ─────────────────────────────────────────────────────
 
     @Test
-    void registerShouldReturn201WhenValid() throws Exception {
-        when(mapper.toRegisterDto(any())).thenReturn(RegisterRequestDto.builder()
-                .email("student@mail.escuelaing.edu.co").password("password123").build());
-        doNothing().when(registerUserPort).register(any());
+    void initVerificationShouldReturn201WhenValid() throws Exception {
+        when(mapper.toInitVerificationDto(any())).thenReturn(
+                new InitVerificationRequestDto("student@mail.escuelaing.edu.co", "$2a$10$SomeHashedPasswordValue"));
+        doNothing().when(initVerificationPort).initVerification(any());
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/auth/init-verification")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTER_JSON))
+                        .content(INIT_VERIFICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.message").value("OTP sent to email"));
     }
 
     @Test
-    void registerShouldReturn409WhenEmailAlreadyExists() throws Exception {
-        when(mapper.toRegisterDto(any())).thenReturn(RegisterRequestDto.builder().build());
-        doThrow(new UserAlreadyExistsException("Email taken"))
-                .when(registerUserPort).register(any());
-
-        mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTER_JSON))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.codigo").value("USER_ALREADY_EXISTS"));
-    }
-
-    @Test
-    void registerShouldReturn400WhenInvalidEmailDomain() throws Exception {
-        when(mapper.toRegisterDto(any())).thenReturn(RegisterRequestDto.builder().build());
+    void initVerificationShouldReturn400WhenInvalidEmailDomain() throws Exception {
+        when(mapper.toInitVerificationDto(any())).thenReturn(new InitVerificationRequestDto("bad@other.com", "hash"));
         doThrow(new InvalidEmailDomainException("Bad domain"))
-                .when(registerUserPort).register(any());
+                .when(initVerificationPort).initVerification(any());
 
-        mockMvc.perform(post("/api/v1/auth/register")
+        mockMvc.perform(post("/api/v1/auth/init-verification")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(REGISTER_JSON))
+                        .content(INIT_VERIFICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("INVALID_EMAIL_DOMAIN"));
     }
@@ -401,5 +380,33 @@ class AuthControllerTest {
                         .content(RESET_PASSWORD_WRONG_CODE_JSON))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.codigo").value("OTP_INVALID"));
+    }
+
+    // ── Change Password ───────────────────────────────────────────────────────
+
+    @Test
+    void changePasswordShouldReturn200WhenValid() throws Exception {
+        when(jwtService.extractUserId(anyString())).thenReturn("user-uuid-123");
+        doNothing().when(changePasswordPort).changePassword(any());
+
+        mockMvc.perform(post("/api/v1/auth/change-password")
+                        .header("Authorization", "Bearer valid-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CHANGE_PASSWORD_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password changed successfully"));
+    }
+
+    @Test
+    void changePasswordShouldReturn401WhenTokenInvalid() throws Exception {
+        when(jwtService.extractUserId(anyString()))
+                .thenThrow(new TokenInvalidException("Invalid token"));
+
+        mockMvc.perform(post("/api/v1/auth/change-password")
+                        .header("Authorization", "Bearer bad-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CHANGE_PASSWORD_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.codigo").value("TOKEN_INVALID"));
     }
 }

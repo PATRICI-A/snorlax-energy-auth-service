@@ -12,6 +12,7 @@ class RefreshTokenTest {
         return new RefreshToken(
                 "token-id",
                 "user-id",
+                "user@mail.escuelaing.edu.co",
                 "jwt-token",
                 "refresh-token",
                 LocalDateTime.now().plusMinutes(15),
