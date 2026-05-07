@@ -4,10 +4,8 @@ import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
-import edu.eci.patricia.DOSW_patricia.domain.model.User;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.RefreshTokenPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
-import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserRepositoryPort;
 import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +18,6 @@ import java.util.UUID;
 public class RefreshTokenUseCase implements RefreshTokenPort {
 
     private final RefreshTokenRepositoryPort refreshTokenRepository;
-    private final UserRepositoryPort userRepository;
     private final JwtService jwtService;
 
     @Override
@@ -36,16 +33,14 @@ public class RefreshTokenUseCase implements RefreshTokenPort {
             throw new TokenExpiredException("Refresh token has expired");
         }
 
-        User user = userRepository.findById(session.getUserId())
-                .orElseThrow(() -> new TokenInvalidException("User not found"));
-
-        String accessToken = jwtService.generateToken(session.getUserId(), user.getEmail().getValue());
+        String accessToken = jwtService.generateToken(session.getUserId(), session.getEmail());
 
         refreshTokenRepository.deleteByUserId(session.getUserId());
 
         RefreshToken newSession = new RefreshToken(
                 UUID.randomUUID().toString(),
                 session.getUserId(),
+                session.getEmail(),
                 accessToken,
                 UUID.randomUUID().toString(),
                 jwtService.getJwtExpirationTime(),

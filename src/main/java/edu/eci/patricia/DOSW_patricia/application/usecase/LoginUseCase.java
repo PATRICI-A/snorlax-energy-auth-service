@@ -1,15 +1,17 @@
 package edu.eci.patricia.DOSW_patricia.application.usecase;
 
+import edu.eci.patricia.DOSW_patricia.application.dto.external.UserDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.request.LoginRequestDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.CuentaBloqueadaException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.EmailNotVerifiedException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.InvalidCredentialsException;
 import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
-import edu.eci.patricia.DOSW_patricia.domain.model.User;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.LoginPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
-import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserRepositoryPort;
+import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
+import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.LockoutCache;
+import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository.LockoutRedisRepository;
 import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,45 +24,51 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LoginUseCase implements LoginPort {
 
-    private final UserRepositoryPort userRepository;
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+
+    private final UserServicePort userServicePort;
     private final RefreshTokenRepositoryPort refreshTokenRepository;
+    private final LockoutRedisRepository lockoutRedisRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public LoginResponseDto login(LoginRequestDto dto) {
-        User user = userRepository.findByEmail(dto.getEmail())
+        String email = dto.getEmail().trim().toLowerCase();
+
+        UserDto user = userServicePort.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
 
-        if (user.getBlockedUntil() != null && user.getBlockedUntil().isAfter(LocalDateTime.now())) {
-            throw new CuentaBloqueadaException(
-                    "Account blocked. Try again after " + user.getBlockedUntil());
-        }
-
-        if (!passwordEncoder.matches(dto.getPassword(), user.getHashedPassword())) {
-            user.incrementFailedAttempts();
-            if (user.getFailedAttempts() >= 5) {
-                user.lockAccount(LocalDateTime.now().plusMinutes(30));
+        lockoutRedisRepository.findById(email).ifPresent(lockout -> {
+            if (lockout.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
+                throw new CuentaBloqueadaException(
+                        "Account temporarily locked. Please try again in 30 minutes.");
             }
-            userRepository.save(user);
+        });
+
+        if (!passwordEncoder.matches(dto.getPassword(), user.hashedPassword())) {
+            LockoutCache lockout = lockoutRedisRepository.findById(email)
+                    .orElse(LockoutCache.builder().email(email).failedAttempts(0).build());
+            lockout.setFailedAttempts(lockout.getFailedAttempts() + 1);
+            lockoutRedisRepository.save(lockout);
             throw new InvalidCredentialsException();
         }
 
-        if (!user.isVerified()) {
+        if (!user.verified()) {
             throw new EmailNotVerifiedException("Email not verified. Check your inbox for the OTP.");
         }
 
-        user.resetLockout();
-        userRepository.save(user);
+        lockoutRedisRepository.deleteById(email);
 
-        String userId = user.getId().toString();
-        String accessToken = jwtService.generateToken(userId, user.getEmail().getValue());
+        String userId = user.id();
+        String accessToken = jwtService.generateToken(userId, email);
 
         refreshTokenRepository.deleteByUserId(userId);
 
         RefreshToken session = new RefreshToken(
                 UUID.randomUUID().toString(),
                 userId,
+                email,
                 accessToken,
                 UUID.randomUUID().toString(),
                 jwtService.getJwtExpirationTime(),

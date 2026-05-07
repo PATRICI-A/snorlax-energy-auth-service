@@ -1,29 +1,31 @@
-package edu.eci.patricia.DOSW_patricia.infrastructure.adapters.persistence.entity;
+package edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.redis.core.index.Indexed;
+import org.springframework.data.redis.core.RedisHash;
 
 import java.time.LocalDateTime;
 
-@Document(collection = "sesiones")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefreshTokenEntity {
+@RedisHash(value = "refresh_token", timeToLive = 604800)
+public class RefreshTokenCache {
 
     @Id
-    private String id;
-
-    private String userId;
-    private String jwt;
     private String refreshToken;
-    private LocalDateTime expiraJwt;
-    private Boolean revocado;
+
+    @Indexed
+    private String userId;
+
+    private String email;
+    private String jwt;
+    private boolean revoked;
     private LocalDateTime createdAt;
     private LocalDateTime expiraRefresh;
 }
