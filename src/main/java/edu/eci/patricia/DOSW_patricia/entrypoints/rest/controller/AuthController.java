@@ -1,23 +1,27 @@
 package edu.eci.patricia.DOSW_patricia.entrypoints.rest.controller;
 
+import edu.eci.patricia.DOSW_patricia.application.dto.request.ChangePasswordRequestDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.response.RegisterResponseDto;
+import edu.eci.patricia.DOSW_patricia.domain.ports.in.ChangePasswordPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.ForgotPasswordPort;
+import edu.eci.patricia.DOSW_patricia.domain.ports.in.InitVerificationPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.LoginPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.LogoutPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.RefreshTokenPort;
-import edu.eci.patricia.DOSW_patricia.domain.ports.in.RegisterUserPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.ResendOtpPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.ResetPasswordPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.ValidateOtpPort;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.mapper.AuthRestMapper;
+import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ChangePasswordRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ForgotPasswordRequest;
+import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.InitVerificationRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.LoginRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.RefreshTokenRequest;
-import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.RegisterRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ResendOtpRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ResetPasswordRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ValidateOtpRequest;
+import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -33,13 +37,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
-@Tag(name = "Authentication", description = "User registration, OTP verification, login, token refresh, logout and password recovery")
+@Tag(name = "Authentication", description = "OTP verification, login, token management and password operations")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final RegisterUserPort registerUserPort;
+    private final InitVerificationPort initVerificationPort;
     private final ValidateOtpPort validateOtpPort;
     private final LoginPort loginPort;
     private final RefreshTokenPort refreshTokenPort;
@@ -47,22 +51,23 @@ public class AuthController {
     private final ForgotPasswordPort forgotPasswordPort;
     private final ResetPasswordPort resetPasswordPort;
     private final ResendOtpPort resendOtpPort;
+    private final ChangePasswordPort changePasswordPort;
     private final AuthRestMapper mapper;
+    private final JwtService jwtService;
 
     @Operation(
-            summary = "Register a new user",
-            description = "Validates that the email belongs to @mail.escuelaing.edu.co, hashes the password " +
-                    "with BCrypt, creates the account (unverified), generates a 6-digit OTP via SecureRandom, " +
-                    "and sends it to the institutional email. The account cannot log in until the OTP is verified. " +
-                    "NOTE: this endpoint must be called over HTTPS — the password travels in the request body.")
+            summary = "Initialize OTP verification",
+            description = "Called by the registration service after creating a user. " +
+                    "Receives the institutional email and the already BCrypt-hashed password, " +
+                    "generates a 6-digit OTP, stores it in cache (10-minute TTL), and sends it to the email.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "User created and OTP sent to institutional email"),
-            @ApiResponse(responseCode = "400", description = "Email domain is not @mail.escuelaing.edu.co, or a required field is missing/invalid"),
-            @ApiResponse(responseCode = "409", description = "An account with this email already exists")
+            @ApiResponse(responseCode = "201", description = "OTP generated and sent to institutional email"),
+            @ApiResponse(responseCode = "400", description = "Missing or invalid fields")
     })
-    @PostMapping("/register")
-    public ResponseEntity<RegisterResponseDto> register(@Valid @RequestBody RegisterRequest request) {
-        registerUserPort.register(mapper.toRegisterDto(request));
+    @PostMapping("/init-verification")
+    public ResponseEntity<RegisterResponseDto> initVerification(
+            @Valid @RequestBody InitVerificationRequest request) {
+        initVerificationPort.initVerification(mapper.toInitVerificationDto(request));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new RegisterResponseDto("OTP sent to email"));
     }
@@ -70,8 +75,8 @@ public class AuthController {
     @Operation(
             summary = "Verify OTP and activate account",
             description = "Validates the 6-digit OTP sent during registration. " +
-                    "On success the account is marked as verified and JWT access + refresh tokens are returned. " +
-                    "The OTP expires after 10 minutes. After 3 wrong attempts the OTP is blocked — use /resend-otp to get a new one.")
+                    "On success the account is marked as verified in the user service and JWT access + refresh tokens are returned. " +
+                    "The OTP expires after 10 minutes. After 3 wrong attempts the OTP is deleted — use /resend-otp to get a new one.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OTP valid — account activated, tokens returned"),
             @ApiResponse(responseCode = "422", description = "OTP invalid, expired, or already used"),
@@ -85,10 +90,9 @@ public class AuthController {
     @Operation(
             summary = "Resend OTP",
             description = "Generates and sends a new 6-digit OTP to the registered institutional email. " +
-                    "Use this when the previous OTP has expired or the maximum number of attempts (3) was reached. " +
-                    "Resets the attempt counter. If the account is already verified this call is a no-op.")
+                    "Use this when the previous OTP has expired or the maximum number of attempts (3) was reached.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "New OTP sent to email (or account was already verified)"),
+            @ApiResponse(responseCode = "200", description = "New OTP sent to email"),
             @ApiResponse(responseCode = "422", description = "No account found for the given email")
     })
     @PostMapping("/resend-otp")
@@ -100,7 +104,7 @@ public class AuthController {
     @Operation(
             summary = "Login",
             description = "Authenticates the user with email and password. " +
-                    "Returns a short-lived JWT access token and a long-lived refresh token (7 days). " +
+                    "Returns a short-lived JWT access token (15 min) and a long-lived refresh token (7 days). " +
                     "The account must be verified via OTP before login is allowed. " +
                     "After 5 consecutive failed attempts the account is locked for 30 minutes.")
     @ApiResponses({
@@ -129,12 +133,10 @@ public class AuthController {
 
     @Operation(
             summary = "Logout",
-            description = "Invalidates the current session by revoking the refresh token associated with the Bearer token. " +
-                    "After logout the access token remains technically valid until its expiry, " +
-                    "but the refresh token can no longer be used to obtain new tokens.")
+            description = "Invalidates the current session by deleting the refresh token associated with the Bearer token.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Session closed — refresh token revoked"),
-            @ApiResponse(responseCode = "401", description = "Bearer token is missing, invalid, or already revoked")
+            @ApiResponse(responseCode = "200", description = "Session closed — refresh token deleted"),
+            @ApiResponse(responseCode = "401", description = "Bearer token is missing or invalid")
     })
     @PostMapping("/logout")
     public ResponseEntity<RegisterResponseDto> logout(
@@ -161,7 +163,7 @@ public class AuthController {
     @Operation(
             summary = "Reset password",
             description = "Validates the recovery code sent by /forgot-password and sets a new password. " +
-                    "The new password is hashed with BCrypt before storage. " +
+                    "The new password is hashed with BCrypt and updated in the user service. " +
                     "The recovery code is single-use and expires after 10 minutes.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Password updated successfully"),
@@ -171,5 +173,26 @@ public class AuthController {
     public ResponseEntity<RegisterResponseDto> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         resetPasswordPort.resetPassword(mapper.toResetPasswordDto(request));
         return ResponseEntity.ok(new RegisterResponseDto("Password updated successfully"));
+    }
+
+    @Operation(
+            summary = "Change password",
+            description = "Allows an authenticated user to change their password. " +
+                    "Requires the current password for verification. " +
+                    "Send the Bearer JWT token in the Authorization header.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "401", description = "Current password is incorrect or token is invalid")
+    })
+    @PostMapping("/change-password")
+    public ResponseEntity<RegisterResponseDto> changePassword(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        String token = authHeader.replace("Bearer ", "").trim();
+        String userId = jwtService.extractUserId(token);
+        ChangePasswordRequestDto dto = new ChangePasswordRequestDto(
+                userId, request.getCurrentPassword(), request.getNewPassword());
+        changePasswordPort.changePassword(dto);
+        return ResponseEntity.ok(new RegisterResponseDto("Password changed successfully"));
     }
 }

@@ -6,6 +6,7 @@ public class RefreshToken {
 
     private String id;
     private String userId;
+    private String email;
     private String jwt;
     private String refreshToken;
     private LocalDateTime expiraJwt;
@@ -13,11 +14,12 @@ public class RefreshToken {
     private LocalDateTime createdAt;
     private LocalDateTime expiraRefresh;
 
-    public RefreshToken(String id, String userId, String jwt, String refreshToken,
+    public RefreshToken(String id, String userId, String email, String jwt, String refreshToken,
                         LocalDateTime expiraJwt, Boolean revocado,
                         LocalDateTime createdAt, LocalDateTime expiraRefresh) {
         this.id = id;
         this.userId = userId;
+        this.email = email;
         this.jwt = jwt;
         this.refreshToken = refreshToken;
         this.expiraJwt = expiraJwt;
@@ -40,6 +42,7 @@ public class RefreshToken {
 
     public String getId() { return id; }
     public String getUserId() { return userId; }
+    public String getEmail() { return email; }
     public String getJwt() { return jwt; }
     public String getRefreshToken() { return refreshToken; }
     public LocalDateTime getExpiraJwt() { return expiraJwt; }

@@ -28,6 +28,7 @@ public class JwtService {
     public String generateToken(String userId, String email) {
         return Jwts.builder()
                 .subject(userId)
+                .issuer("patricia-auth-service")
                 .claim("email", email)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))

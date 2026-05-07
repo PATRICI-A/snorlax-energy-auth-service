@@ -6,12 +6,12 @@ import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
 import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
-import edu.eci.patricia.DOSW_patricia.domain.model.User;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.ValidateOtpPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
-import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserRepositoryPort;
+import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
 import edu.eci.patricia.DOSW_patricia.domain.valueobjects.OtpCode;
-import edu.eci.patricia.DOSW_patricia.domain.valueobjects.OtpEmbedded;
+import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.OtpCache;
+import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository.OtpRedisRepository;
 import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,53 +23,51 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ValidateOtpUseCase implements ValidateOtpPort {
 
-    private final UserRepositoryPort userRepository;
+    private static final int MAX_ATTEMPTS = 3;
+
+    private final OtpRedisRepository otpRedisRepository;
     private final RefreshTokenRepositoryPort refreshTokenRepository;
+    private final UserServicePort userServicePort;
     private final JwtService jwtService;
 
     @Override
     public LoginResponseDto validateOtp(ValidateOtpRequestDto request) {
         new OtpCode(request.getOtp());
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new OtpInvalidException("No user found for this email"));
+        String email = request.getEmail().trim().toLowerCase();
 
-        OtpEmbedded otp = user.getOtp();
-        if (otp == null) {
-            throw new OtpInvalidException("No OTP found for this user");
-        }
+        OtpCache otp = otpRedisRepository.findById(email)
+                .orElseThrow(() -> new OtpExpiredException("OTP has expired. Please request a new one"));
 
-        if (otp.haExpirado()) {
-            throw new OtpExpiredException("OTP has expired. Please request a new one");
-        }
-
-        if (Boolean.TRUE.equals(otp.getUsado())) {
+        if (otp.isUsed()) {
             throw new OtpInvalidException("OTP has already been used");
         }
 
-        if (!otp.getCodigo().equals(request.getOtp())) {
-            otp.incrementarIntentos();
-            userRepository.save(user);
-            if (otp.haAlcanzadoLimite()) {
+        if (!otp.getCode().equals(request.getOtp())) {
+            otp.setAttempts(otp.getAttempts() + 1);
+            if (otp.getAttempts() >= MAX_ATTEMPTS) {
+                otpRedisRepository.delete(otp);
                 throw new OtpMaxAttemptsException(
                         "Maximum OTP attempts reached. Please request a new code via /resend-otp");
             }
+            otpRedisRepository.save(otp);
             throw new OtpInvalidException("Invalid OTP");
         }
 
-        otp.marcaUsado();
-        user.verify();
-        user.resetLockout();
-        userRepository.save(user);
+        otpRedisRepository.delete(otp);
+        userServicePort.markUserAsVerified(email);
 
-        String userId = user.getId().toString();
-        String accessToken = jwtService.generateToken(userId, user.getEmail().getValue());
+        String userId = userServicePort.findByEmail(email)
+                .orElseThrow(() -> new OtpInvalidException("User not found after verification"))
+                .id();
 
+        String accessToken = jwtService.generateToken(userId, email);
         refreshTokenRepository.deleteByUserId(userId);
 
         RefreshToken session = new RefreshToken(
                 UUID.randomUUID().toString(),
                 userId,
+                email,
                 accessToken,
                 UUID.randomUUID().toString(),
                 jwtService.getJwtExpirationTime(),
