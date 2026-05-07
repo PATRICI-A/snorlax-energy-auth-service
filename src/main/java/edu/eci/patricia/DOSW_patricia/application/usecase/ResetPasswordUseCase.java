@@ -1,5 +1,6 @@
 package edu.eci.patricia.DOSW_patricia.application.usecase;
 
+import edu.eci.patricia.DOSW_patricia.application.dto.external.UserDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.request.ResetPasswordRequestDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
@@ -23,7 +24,7 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
     public void resetPassword(ResetPasswordRequestDto dto) {
         String email = dto.getEmail().trim().toLowerCase();
 
-        userServicePort.findByEmail(email)
+        UserDto user = userServicePort.findByEmail(email)
                 .orElseThrow(() -> new OtpInvalidException("No account found with that email"));
 
         PasswordResetOtpCache resetOtp = passwordResetOtpRedisRepository.findById(email)
@@ -37,6 +38,6 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
         passwordResetOtpRedisRepository.save(resetOtp);
 
         String newHashedPassword = passwordEncoder.encode(dto.getNewPassword());
-        userServicePort.updatePassword(email, newHashedPassword);
+        userServicePort.updatePassword(user.id(), newHashedPassword);
     }
 }

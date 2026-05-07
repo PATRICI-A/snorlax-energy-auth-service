@@ -12,7 +12,7 @@ Microservicio de autenticación para la plataforma PATRICIA (ECI). Responsable d
 - Arquitectura hexagonal (puertos y adaptadores)
 - MapStruct, Lombok
 - SpringDoc OpenAPI (Swagger UI)
-- Docker
+  - Docker
 
 ---
 
