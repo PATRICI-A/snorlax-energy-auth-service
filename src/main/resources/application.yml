@@ -3,3 +3,6 @@ spring:
     name: auth-service
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+
+server:
+  forward-headers-strategy: framework
