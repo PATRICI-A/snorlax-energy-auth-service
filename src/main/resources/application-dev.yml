@@ -1,4 +1,6 @@
 spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -28,3 +30,9 @@ jwt:
 user:
   service:
     url: ${USER_SERVICE_URL:http://localhost:8081}
+
+springdoc:
+  swagger-ui:
+    use-root-path: true
+  servers:
+    - url: ${SERVER_URL:http://localhost:8080}
