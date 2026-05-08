@@ -1,141 +1,175 @@
-# README del Proyecto
+# Auth Service — PATRICIA
 
-## Índice
-1. [Tecnologías utilizadas](#-tecnologías-utilizadas)  
-2. [Descripción del módulo](#-descripción-del-módulo)  
-3. [Funcionamiento del módulo](#-funcionamiento-del-módulo)  
-4. [Diagramas](#-diagramas)  
-5. [Funcionalidades](#-funcionalidades)  
-6. [Endpoints expuestos](#-endpoints-expuestos)  
-7. [Manejo de errores](#-manejo-de-errores)  
-8. [Mensajería (colas/tópicos)](#-mensajería-colastópicos)  
-9. [Pruebas](#-pruebas)  
-10. [Ejecución del proyecto](#-ejecución-del-proyecto)  
-11. [Despliegue CI/CD](#-despliegue-cicd)  
-12. [Estructura del código](#-estructura-del-código)  
-13. [Documentación del código](#-documentación-del-código)  
-14. [Conexiones con servicios externos](#-conexiones-con-servicios-externos)  
-15. [Calidad de código](#-calidad-de-código)  
-16. [Pipelines](#-pipelines)  
+Microservicio de autenticación para la plataforma PATRICIA (ECI). Responsable del registro de estudiantes, verificación por OTP, login con JWT y recuperación de contraseña.
 
 ---
 
-## Tecnologías utilizadas
-Describe aquí las tecnologías usadas en el proyecto.  
-Ejemplo:
-- Lenguaje:  
-- Framework:  
-- Base de datos:  
-- Herramientas adicionales:  
+## Tecnologías
+
+- Java 21 / Spring Boot 4
+- Spring Security + JWT
+- MongoDB Atlas
+- Arquitectura hexagonal (puertos y adaptadores)
+- MapStruct, Lombok
+- SpringDoc OpenAPI (Swagger UI)
+  - Docker
 
 ---
 
-## Descripción del módulo
-Explica qué hace el módulo, su propósito dentro del sistema y su responsabilidad principal.
+## Estructura del proyecto
+
+```
+src/main/java/.../
+├── application/
+│   ├── dto/              # Request y response DTOs
+│   ├── mapper/           # MapStruct mappers
+│   └── usecase/          # Casos de uso (lógica de negocio)
+├── domain/
+│   ├── exceptions/       # Excepciones de dominio
+│   ├── model/            # Modelos de dominio (User, RefreshToken)
+│   ├── ports/
+│   │   ├── in/           # Puertos de entrada (interfaces de casos de uso)
+│   │   └── out/          # Puertos de salida (repositorios, email)
+│   └── valueobjects/     # Objetos de valor (Email, Password, OtpEmbedded...)
+├── entrypoints/
+│   ├── advice/           # Manejador global de excepciones
+│   └── rest/             # Controladores REST y mappers de entrada
+└── infrastructure/
+    ├── adapters/          # Adaptadores de persistencia (MongoDB)
+    ├── config/            # Configuración de seguridad
+    └── external/          # JWT Service, Email Sender
+```
 
 ---
 
-## Funcionamiento del módulo
-Describe:
-- Cómo funciona internamente  
-- Qué otros módulos lo consumen  
-- Patrones utilizados (ej: MVC, Hexagonal, etc.)  
-- Estilo de arquitectura  
+## Endpoints — `POST /api/v1/auth/`
+
+| Endpoint         | Descripción                                                  | Auth |
+|------------------|--------------------------------------------------------------|------|
+| `/register`      | Registra usuario y envía OTP al correo institucional         | No   |
+| `/verify-otp`    | Valida OTP y activa la cuenta — retorna tokens JWT           | No   |
+| `/resend-otp`    | Reenvía un nuevo OTP (útil si expiró o se agotaron intentos) | No   |
+| `/login`         | Autentica y retorna access token + refresh token             | No   |
+| `/refresh`       | Rota el refresh token y emite nuevos tokens                  | No   |
+| `/logout`        | Revoca el refresh token de la sesión actual                  | Sí   |
+| `/forgot-password` | Envía código de recuperación al correo                     | No   |
+| `/reset-password`  | Valida código y establece nueva contraseña                 | No   |
+
+La documentación completa con ejemplos está disponible en **Swagger UI**: `http://localhost:8080/swagger-ui.html`
 
 ---
 
-## Diagramas
-Incluye o referencia:
-- Diagramas de datos  
-- Diagramas de clases  
-- Diagramas de componentes  
+## Flujo de registro
+
+```
+1. POST /register     → valida dominio @mail.escuelaing.edu.co
+                      → hashea contraseña con BCrypt
+                      → genera OTP de 6 dígitos (SecureRandom, backend)
+                      → envía OTP al correo institucional
+                      → cuenta queda en estado no verificado
+
+2. POST /verify-otp   → valida formato (6 dígitos numéricos)
+                      → verifica que no haya expirado (TTL 10 min)
+                      → verifica que no se haya usado ya
+                      → verifica el código (máx. 3 intentos)
+                      → activa la cuenta y retorna tokens JWT
+
+3. POST /resend-otp   → si el OTP expiró o se agotaron los 3 intentos
+                      → genera nuevo OTP y resetea el contador
+```
 
 ---
 
-## Funcionalidades
-Lista las funcionalidades principales del módulo y una breve descripción de cada una.
+## Seguridad
+
+- Contraseñas almacenadas con **BCrypt** — nunca en texto plano
+- **Este servicio debe ejecutarse sobre HTTPS** en producción — la contraseña viaja en el body de la petición
+- El OTP es generado por el **backend** (`SecureRandom`) — el frontend nunca lo genera
+- OTP expira en **10 minutos** y se bloquea tras **3 intentos fallidos**
+- Login bloqueado **30 minutos** tras 5 intentos fallidos consecutivos
+- Tokens: access token de corta duración + refresh token rotativo de 7 días
+- Logout revoca el refresh token (el access token expira naturalmente)
 
 ---
 
-## Endpoints expuestos
-Para cada endpoint especifica:
+## Visibilidad de perfil (`ProfileVisibility`)
 
-- Ruta (endpoint)  
-- Método HTTP  
-- Entrada  
-- Salida  
-- Happy Path (flujo exitoso)  
-
----
-
-## Manejo de errores
-Describe:
-- Tipos de errores  
-- Códigos HTTP  
-- Respuestas en caso de fallo  
+| Valor         | Quién puede ver el perfil                                         |
+|---------------|-------------------------------------------------------------------|
+| `PUBLIC`      | Todos los usuarios — aparece en búsqueda y feed                   |
+| `PRIVATE`     | Solo el propio usuario                                            |
+| `MATCH_ONLY`  | Solo usuarios con afinidad calculada — oculto en búsqueda y feed |
 
 ---
 
-## Mensajería (colas/tópicos)
-Si aplica, describe:
-- Nombre de colas o tópicos  
-- Información enviada  
-- Respuestas posibles  
-- Happy Path  
-- Dead Letter (manejo de fallos)  
+## Validaciones de registro
+
+| Campo              | Regla                                                     |
+|--------------------|-----------------------------------------------------------|
+| `email`            | Obligatorio — debe terminar en `@mail.escuelaing.edu.co`  |
+| `password`         | Obligatorio — mínimo 8 caracteres                         |
+| `name` / `lastName`| Obligatorios                                              |
+| `program`          | Obligatorio                                               |
+| `semester`         | Obligatorio — entre 1 y 10                                |
+| `interests`        | Obligatorio — mínimo 3 valores del enum `Interes`         |
+| `birthDate`        | Obligatorio — debe ser fecha pasada                       |
+| `gender`           | Obligatorio — enum `Genero` (MALE, FEMALE, OTHER)         |
+| `profileVisibility`| Obligatorio — enum `ProfileVisibility`                    |
+
+> La validación de confirmación de contraseña se realiza **solo en el frontend**. La API recibe únicamente `password`.
 
 ---
 
-## Pruebas
-Incluye:
-- Evidencia de pruebas  
-- Tipos de pruebas (unitarias, integración, etc.)  
-- Cómo ejecutarlas  
+## Diagrama de componentes
+
+<!-- Insertar aquí el diagrama de componentes del microservicio -->
 
 ---
 
-## Ejecución del proyecto
-Explica cómo correr el proyecto localmente.  
-Ejemplo:
-- Instalación de dependencias  
-- Variables de entorno  
-- Comando de ejecución  
+## Diagrama de clases
+
+<!-- Insertar aquí el diagrama de clases (User, OtpEmbedded, RefreshToken, enums) -->
 
 ---
 
-## Despliegue CI/CD
-Describe:
-- Proceso de despliegue  
-- Enlace en Azure  
-- Swagger expuesto  
+## Diagrama de base de datos
+
+<!-- Insertar aquí el diagrama de la colección MongoDB (users, refresh_tokens) -->
 
 ---
 
-## Estructura del código
-Explica cómo está organizado el proyecto en carpetas y archivos.
+## Ejecutar localmente
+
+```bash
+# Con Docker Compose (incluye MongoDB local)
+docker-compose up --build
+
+# Solo el servicio (requiere MongoDB Atlas configurado en application-dev.yml)
+mvn spring-boot:run -Pdev
+```
+
+Variables de entorno requeridas (ver `application.yml`):
+
+```
+MONGODB_URI=<connection string de MongoDB Atlas>
+JWT_SECRET=<clave secreta para firmar tokens>
+MAIL_USERNAME=<correo remitente>
+MAIL_PASSWORD=<contraseña del correo>
+```
 
 ---
 
-## Documentación del código
-Indica:
-- Convenciones usadas  
-- Documentación por funciones, clases y propiedades  
+## Tests
 
----
+```bash
+mvn test
+```
 
-## Conexiones con servicios externos
-Lista los servicios externos que utiliza el sistema y cómo se conectan.
+Cobertura actual: **148 tests** — 0 fallos
 
----
-
-## Calidad de código
-Incluye:
-- Métricas de calidad  
-- Herramientas utilizadas (Jacoco, Sonar, etc.)  
-
----
-
-## Pipelines
-Cada repositorio debe tener:
-- Pipeline de desarrollo  
-- Pipeline de producción  
+Incluye pruebas unitarias para:
+- Casos de uso (registro, OTP, login, refresh, logout, recuperación de contraseña, reenvío de OTP)
+- Modelos de dominio y value objects
+- Controladores REST (escenarios exitosos y de error)
+- JWT Service
+- Manejador global de excepciones
