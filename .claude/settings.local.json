@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(netstat *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(docker --version)",
+      "PowerShell(winget *)",
+      "Bash(git *)",
+      "PowerShell(gh repo *)",
+      "PowerShell(node --version 2>$null; python --version 2>$null; python3 --version 2>$null)",
+      "PowerShell(npm list *)",
+      "Bash(npm install *)",
+      "Bash(node *)",
+      "Bash(mvn verify *)",
+      "Bash(start *)"
+    ]
+  }
+}
