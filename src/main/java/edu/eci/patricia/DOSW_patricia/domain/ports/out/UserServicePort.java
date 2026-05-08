@@ -10,7 +10,7 @@ public interface UserServicePort {
 
     Optional<UserDto> findById(String userId);
 
-    void markUserAsVerified(String email);
+    void markUserAsVerified(String userId);
 
-    void updatePassword(String email, String newHashedPassword);
+    void updatePassword(String userId, String newHashedPassword);
 }
