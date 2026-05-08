@@ -1,5 +1,6 @@
 package edu.eci.patricia.DOSW_patricia.application.usecase;
 
+import edu.eci.patricia.DOSW_patricia.application.dto.external.UserDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.request.ValidateOtpRequestDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
@@ -55,18 +56,18 @@ public class ValidateOtpUseCase implements ValidateOtpPort {
         }
 
         otpRedisRepository.delete(otp);
-        userServicePort.markUserAsVerified(email);
 
-        String userId = userServicePort.findByEmail(email)
-                .orElseThrow(() -> new OtpInvalidException("User not found after verification"))
-                .id();
+        UserDto user = userServicePort.findByEmail(email)
+                .orElseThrow(() -> new OtpInvalidException("User not found"));
 
-        String accessToken = jwtService.generateToken(userId, email);
-        refreshTokenRepository.deleteByUserId(userId);
+        userServicePort.markUserAsVerified(user.id());
+
+        String accessToken = jwtService.generateToken(user.id(), email);
+        refreshTokenRepository.deleteByUserId(user.id());
 
         RefreshToken session = new RefreshToken(
                 UUID.randomUUID().toString(),
-                userId,
+                user.id(),
                 email,
                 accessToken,
                 UUID.randomUUID().toString(),

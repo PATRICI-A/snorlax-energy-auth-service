@@ -25,7 +25,7 @@ public class UserServiceRestAdapter implements UserServicePort {
     public Optional<UserDto> findByEmail(String email) {
         try {
             UserDto user = restClient.get()
-                    .uri(userServiceUrl + "/api/v1/users/email/{email}", email)
+                    .uri(userServiceUrl + "/api/users/email/{email}", email)
                     .retrieve()
                     .body(UserDto.class);
             return Optional.ofNullable(user);
@@ -38,7 +38,7 @@ public class UserServiceRestAdapter implements UserServicePort {
     public Optional<UserDto> findById(String userId) {
         try {
             UserDto user = restClient.get()
-                    .uri(userServiceUrl + "/api/v1/users/{userId}", userId)
+                    .uri(userServiceUrl + "/api/users/{userId}", userId)
                     .retrieve()
                     .body(UserDto.class);
             return Optional.ofNullable(user);
@@ -48,17 +48,17 @@ public class UserServiceRestAdapter implements UserServicePort {
     }
 
     @Override
-    public void markUserAsVerified(String email) {
+    public void markUserAsVerified(String userId) {
         restClient.patch()
-                .uri(userServiceUrl + "/api/v1/users/email/{email}/verify", email)
+                .uri(userServiceUrl + "/api/users/{userId}/verify", userId)
                 .retrieve()
                 .toBodilessEntity();
     }
 
     @Override
-    public void updatePassword(String email, String newHashedPassword) {
+    public void updatePassword(String userId, String newHashedPassword) {
         restClient.patch()
-                .uri(userServiceUrl + "/api/v1/users/email/{email}/password", email)
+                .uri(userServiceUrl + "/api/users/{userId}/password", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of("hashedPassword", newHashedPassword))
                 .retrieve()
