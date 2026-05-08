@@ -28,8 +28,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import edu.eci.patricia.DOSW_patricia.application.dto.response.TokenValidationResponse;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -173,6 +177,25 @@ public class AuthController {
     public ResponseEntity<RegisterResponseDto> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         resetPasswordPort.resetPassword(mapper.toResetPasswordDto(request));
         return ResponseEntity.ok(new RegisterResponseDto("Password updated successfully"));
+    }
+
+    @Operation(
+            summary = "Validate access token",
+            description = "Called by other microservices to verify that a Bearer JWT is valid and not expired. " +
+                    "Returns the userId and email embedded in the token.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Token is valid — userId and email returned"),
+            @ApiResponse(responseCode = "401", description = "Token is missing, invalid, or expired")
+    })
+    @GetMapping("/validate")
+    public ResponseEntity<TokenValidationResponse> validateToken(
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "").trim();
+        Jws<Claims> jws = jwtService.validateToken(token);
+        return ResponseEntity.ok(TokenValidationResponse.builder()
+                .userId(jws.getPayload().getSubject())
+                .email(jws.getPayload().get("email", String.class))
+                .build());
     }
 
     @Operation(
