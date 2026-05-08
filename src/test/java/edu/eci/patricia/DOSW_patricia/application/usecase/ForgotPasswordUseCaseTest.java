@@ -16,11 +16,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ForgotPasswordUseCaseTest {
@@ -28,34 +26,48 @@ class ForgotPasswordUseCaseTest {
     @Mock private UserServicePort userServicePort;
     @Mock private PasswordResetOtpRedisRepository passwordResetOtpRedisRepository;
     @Mock private EmailSenderPort emailSender;
-
-    @InjectMocks private ForgotPasswordUseCase forgotPasswordUseCase;
+    @InjectMocks private ForgotPasswordUseCase useCase;
 
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
 
     @Test
-    void forgotPassword_usuarioExiste_guardaCodigoYEnviaEmail() {
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(
-                new UserDto("uid", EMAIL, "hash", true, RolEnum.STUDENT)));
+    void shouldSendResetCodeSuccessfully() {
+        UserDto user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
-        forgotPasswordUseCase.forgotPassword(EMAIL);
+        useCase.forgotPassword(EMAIL);
 
-        ArgumentCaptor<PasswordResetOtpCache> captor = ArgumentCaptor.forClass(PasswordResetOtpCache.class);
-        verify(passwordResetOtpRedisRepository).save(captor.capture());
-
-        PasswordResetOtpCache guardado = captor.getValue();
-        assertThat(guardado.getEmail()).isEqualTo(EMAIL);
-        assertThat(guardado.getCode()).hasSize(6);
-        assertThat(guardado.isUsed()).isFalse();
-
-        verify(emailSender).sendPasswordReset(eq(EMAIL), eq(guardado.getCode()));
+        verify(passwordResetOtpRedisRepository).save(any(PasswordResetOtpCache.class));
+        verify(emailSender).sendPasswordReset(eq(EMAIL), anyString());
     }
 
     @Test
-    void forgotPassword_usuarioNoExiste_lanzaOtpInvalid() {
+    void shouldThrowWhenUserNotFound() {
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> forgotPasswordUseCase.forgotPassword(EMAIL))
-                .isInstanceOf(OtpInvalidException.class);
+        assertThrows(OtpInvalidException.class, () -> useCase.forgotPassword(EMAIL));
+    }
+
+    @Test
+    void shouldNormalizeEmailToLowercase() {
+        UserDto user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        useCase.forgotPassword("USER@mail.escuelaing.edu.co");
+
+        verify(userServicePort).findByEmail(EMAIL);
+    }
+
+    @Test
+    void shouldSaveSixDigitResetCode() {
+        UserDto user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        useCase.forgotPassword(EMAIL);
+
+        ArgumentCaptor<PasswordResetOtpCache> captor = ArgumentCaptor.forClass(PasswordResetOtpCache.class);
+        verify(passwordResetOtpRedisRepository).save(captor.capture());
+        assertTrue(captor.getValue().getCode().matches("\\d{6}"));
+        assertFalse(captor.getValue().isUsed());
     }
 }

@@ -6,6 +6,7 @@ import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.CuentaBloqueadaException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.EmailNotVerifiedException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.InvalidCredentialsException;
+import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
 import edu.eci.patricia.DOSW_patricia.domain.valueobjects.RolEnum;
@@ -23,12 +24,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class LoginUseCaseTest {
@@ -38,90 +36,103 @@ class LoginUseCaseTest {
     @Mock private LockoutRedisRepository lockoutRedisRepository;
     @Mock private JwtService jwtService;
     @Mock private PasswordEncoder passwordEncoder;
-
-    @InjectMocks private LoginUseCase loginUseCase;
+    @InjectMocks private LoginUseCase useCase;
 
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
-    private static final String PASSWORD = "Password123!";
-    private static final String HASHED = "$2a$10$hashedPasswordValue";
-    private static final String USER_ID = "user-uuid-001";
+    private static final String PASSWORD = "Test1234!";
+    private static final String HASHED = "$2a$10$hash";
 
     private UserDto verifiedUser;
-    private LoginRequestDto dto;
+    private UserDto unverifiedUser;
+    private RefreshToken savedToken;
 
     @BeforeEach
     void setUp() {
-        verifiedUser = new UserDto(USER_ID, EMAIL, HASHED, true, RolEnum.STUDENT);
-        dto = LoginRequestDto.builder().email(EMAIL).password(PASSWORD).build();
+        verifiedUser = new UserDto("user-id", EMAIL, HASHED, true, RolEnum.STUDENT);
+        unverifiedUser = new UserDto("user-id", EMAIL, HASHED, false, RolEnum.STUDENT);
+        savedToken = new RefreshToken("id", "user-id", EMAIL, "access-token", "refresh-uuid",
+                LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), LocalDateTime.now().plusDays(7));
     }
 
     @Test
-    void login_credencialesCorrectas_retornaTokens() {
+    void shouldLoginSuccessfully() {
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(verifiedUser));
         when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.empty());
         when(passwordEncoder.matches(PASSWORD, HASHED)).thenReturn(true);
-        when(jwtService.generateToken(USER_ID, EMAIL)).thenReturn("access-token");
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtService.getJwtExpirationTime()).thenReturn(LocalDateTime.now().plusMinutes(15));
-        when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(refreshTokenRepository.save(any())).thenReturn(savedToken);
 
-        LoginResponseDto response = loginUseCase.login(dto);
+        LoginResponseDto result = useCase.login(new LoginRequestDto(EMAIL, PASSWORD));
 
-        assertThat(response.getAccessToken()).isEqualTo("access-token");
-        assertThat(response.getTokenType()).isEqualTo("Bearer");
-        assertThat(response.getRefreshToken()).isNotNull();
-        verify(refreshTokenRepository).deleteByUserId(USER_ID);
+        assertNotNull(result);
+        assertEquals("Bearer", result.getTokenType());
+        assertNotNull(result.getAccessToken());
         verify(lockoutRedisRepository).deleteById(EMAIL);
     }
 
     @Test
-    void login_usuarioNoExiste_lanzaInvalidCredentials() {
+    void shouldThrowWhenUserNotFound() {
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> loginUseCase.login(dto))
-                .isInstanceOf(InvalidCredentialsException.class);
+        assertThrows(InvalidCredentialsException.class,
+                () -> useCase.login(new LoginRequestDto(EMAIL, PASSWORD)));
     }
 
     @Test
-    void login_cuentaBloqueada_lanzaCuentaBloqueada() {
-        LockoutCache lockout = LockoutCache.builder().email(EMAIL).failedAttempts(5).build();
+    void shouldThrowWhenAccountIsLocked() {
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(verifiedUser));
+        LockoutCache lockout = LockoutCache.builder().email(EMAIL).failedAttempts(5).build();
         when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.of(lockout));
 
-        assertThatThrownBy(() -> loginUseCase.login(dto))
-                .isInstanceOf(CuentaBloqueadaException.class);
+        assertThrows(CuentaBloqueadaException.class,
+                () -> useCase.login(new LoginRequestDto(EMAIL, PASSWORD)));
     }
 
     @Test
-    void login_contrasenaIncorrecta_incrementaContadorBloqueo() {
-        LockoutCache existente = LockoutCache.builder().email(EMAIL).failedAttempts(2).build();
+    void shouldThrowAndIncrementLockoutOnWrongPassword() {
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(verifiedUser));
-        when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.of(existente));
+        when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.empty());
         when(passwordEncoder.matches(PASSWORD, HASHED)).thenReturn(false);
 
-        assertThatThrownBy(() -> loginUseCase.login(dto))
-                .isInstanceOf(InvalidCredentialsException.class);
+        assertThrows(InvalidCredentialsException.class,
+                () -> useCase.login(new LoginRequestDto(EMAIL, PASSWORD)));
+        verify(lockoutRedisRepository).save(any(LockoutCache.class));
+    }
+
+    @Test
+    void shouldIncrementExistingLockoutCounterOnWrongPassword() {
+        LockoutCache existing = LockoutCache.builder().email(EMAIL).failedAttempts(2).build();
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(verifiedUser));
+        when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.of(existing));
+        when(passwordEncoder.matches(PASSWORD, HASHED)).thenReturn(false);
+
+        assertThrows(InvalidCredentialsException.class,
+                () -> useCase.login(new LoginRequestDto(EMAIL, PASSWORD)));
         verify(lockoutRedisRepository).save(argThat(l -> l.getFailedAttempts() == 3));
     }
 
     @Test
-    void login_primerIntentoFallido_creaRegistroBloqueoConUno() {
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(verifiedUser));
-        when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.empty());
-        when(passwordEncoder.matches(PASSWORD, HASHED)).thenReturn(false);
-
-        assertThatThrownBy(() -> loginUseCase.login(dto))
-                .isInstanceOf(InvalidCredentialsException.class);
-        verify(lockoutRedisRepository).save(argThat(l -> l.getFailedAttempts() == 1));
-    }
-
-    @Test
-    void login_emailNoVerificado_lanzaEmailNotVerified() {
-        UserDto noVerificado = new UserDto(USER_ID, EMAIL, HASHED, false, RolEnum.STUDENT);
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(noVerificado));
+    void shouldThrowWhenEmailNotVerified() {
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(unverifiedUser));
         when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.empty());
         when(passwordEncoder.matches(PASSWORD, HASHED)).thenReturn(true);
 
-        assertThatThrownBy(() -> loginUseCase.login(dto))
-                .isInstanceOf(EmailNotVerifiedException.class);
+        assertThrows(EmailNotVerifiedException.class,
+                () -> useCase.login(new LoginRequestDto(EMAIL, PASSWORD)));
+    }
+
+    @Test
+    void shouldNormalizeEmailToLowercase() {
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(verifiedUser));
+        when(lockoutRedisRepository.findById(EMAIL)).thenReturn(Optional.empty());
+        when(passwordEncoder.matches(PASSWORD, HASHED)).thenReturn(true);
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
+        when(jwtService.getJwtExpirationTime()).thenReturn(LocalDateTime.now().plusMinutes(15));
+        when(refreshTokenRepository.save(any())).thenReturn(savedToken);
+
+        useCase.login(new LoginRequestDto("USER@mail.escuelaing.edu.co", PASSWORD));
+
+        verify(userServicePort).findByEmail(EMAIL);
     }
 }

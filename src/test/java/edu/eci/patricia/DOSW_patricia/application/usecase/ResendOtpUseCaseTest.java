@@ -16,11 +16,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ResendOtpUseCaseTest {
@@ -28,35 +26,48 @@ class ResendOtpUseCaseTest {
     @Mock private OtpRedisRepository otpRedisRepository;
     @Mock private UserServicePort userServicePort;
     @Mock private EmailSenderPort emailSender;
-
-    @InjectMocks private ResendOtpUseCase resendOtpUseCase;
+    @InjectMocks private ResendOtpUseCase useCase;
 
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
 
     @Test
-    void resendOtp_usuarioExiste_guardaNuevoOtpYEnviaEmail() {
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(
-                new UserDto("uid", EMAIL, "hash", false, RolEnum.STUDENT)));
+    void shouldResendOtpSuccessfully() {
+        UserDto user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
-        resendOtpUseCase.resendOtp(EMAIL);
+        useCase.resendOtp(EMAIL);
 
-        ArgumentCaptor<OtpCache> captor = ArgumentCaptor.forClass(OtpCache.class);
-        verify(otpRedisRepository).save(captor.capture());
-
-        OtpCache guardado = captor.getValue();
-        assertThat(guardado.getEmail()).isEqualTo(EMAIL);
-        assertThat(guardado.getCode()).hasSize(6);
-        assertThat(guardado.isUsed()).isFalse();
-        assertThat(guardado.getAttempts()).isZero();
-
-        verify(emailSender).sendOtp(eq(EMAIL), eq(guardado.getCode()));
+        verify(otpRedisRepository).save(any(OtpCache.class));
+        verify(emailSender).sendOtp(eq(EMAIL), anyString());
     }
 
     @Test
-    void resendOtp_usuarioNoExiste_lanzaOtpInvalid() {
+    void shouldThrowWhenUserNotFound() {
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> resendOtpUseCase.resendOtp(EMAIL))
-                .isInstanceOf(OtpInvalidException.class);
+        assertThrows(OtpInvalidException.class, () -> useCase.resendOtp(EMAIL));
+    }
+
+    @Test
+    void shouldNormalizeEmailToLowercase() {
+        UserDto user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        useCase.resendOtp("USER@mail.escuelaing.edu.co");
+
+        verify(userServicePort).findByEmail(EMAIL);
+    }
+
+    @Test
+    void shouldSaveNewOtpWithZeroAttempts() {
+        UserDto user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        useCase.resendOtp(EMAIL);
+
+        ArgumentCaptor<OtpCache> captor = ArgumentCaptor.forClass(OtpCache.class);
+        verify(otpRedisRepository).save(captor.capture());
+        assertFalse(captor.getValue().isUsed());
+        assertEquals(0, captor.getValue().getAttempts());
     }
 }

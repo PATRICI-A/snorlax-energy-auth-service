@@ -18,11 +18,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ResetPasswordUseCaseTest {
@@ -30,75 +28,65 @@ class ResetPasswordUseCaseTest {
     @Mock private UserServicePort userServicePort;
     @Mock private PasswordResetOtpRedisRepository passwordResetOtpRedisRepository;
     @Mock private PasswordEncoder passwordEncoder;
-
-    @InjectMocks private ResetPasswordUseCase resetPasswordUseCase;
+    @InjectMocks private ResetPasswordUseCase useCase;
 
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
-    private static final String CODE = "654321";
+    private static final String CODE = "123456";
 
-    private ResetPasswordRequestDto dto;
-    private PasswordResetOtpCache resetOtpValido;
+    private UserDto user;
+    private PasswordResetOtpCache validCache;
 
     @BeforeEach
     void setUp() {
-        dto = ResetPasswordRequestDto.builder()
-                .email(EMAIL).code(CODE).newPassword("NuevaPass123!").build();
-        resetOtpValido = PasswordResetOtpCache.builder()
-                .email(EMAIL).code(CODE).used(false).build();
+        user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        validCache = PasswordResetOtpCache.builder().email(EMAIL).code(CODE).used(false).build();
     }
 
     @Test
-    void resetPassword_todoValido_actualizaContrasena() {
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(
-                new UserDto("uid", EMAIL, "hash", true, RolEnum.STUDENT)));
-        when(passwordResetOtpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(resetOtpValido));
-        when(passwordEncoder.encode("NuevaPass123!")).thenReturn("$2a$10$newHash");
+    void shouldResetPasswordSuccessfully() {
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(passwordResetOtpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(validCache));
+        when(passwordEncoder.encode("NewPass123!")).thenReturn("new-hashed");
 
-        resetPasswordUseCase.resetPassword(dto);
+        useCase.resetPassword(new ResetPasswordRequestDto(EMAIL, CODE, "NewPass123!"));
 
-        verify(passwordResetOtpRedisRepository).save(any());
-        verify(userServicePort).updatePassword(eq(EMAIL), eq("$2a$10$newHash"));
+        verify(userServicePort).updatePassword("user-id", "new-hashed");
+        verify(passwordResetOtpRedisRepository).save(argThat(PasswordResetOtpCache::isUsed));
     }
 
     @Test
-    void resetPassword_usuarioNoExiste_lanzaOtpInvalid() {
+    void shouldThrowWhenUserNotFound() {
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> resetPasswordUseCase.resetPassword(dto))
-                .isInstanceOf(OtpInvalidException.class);
+        assertThrows(OtpInvalidException.class, () ->
+                useCase.resetPassword(new ResetPasswordRequestDto(EMAIL, CODE, "NewPass123!")));
     }
 
     @Test
-    void resetPassword_codigoExpirado_lanzaOtpExpired() {
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(
-                new UserDto("uid", EMAIL, "hash", true, RolEnum.STUDENT)));
+    void shouldThrowWhenResetCodeExpired() {
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(passwordResetOtpRedisRepository.findById(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> resetPasswordUseCase.resetPassword(dto))
-                .isInstanceOf(OtpExpiredException.class);
+        assertThrows(OtpExpiredException.class, () ->
+                useCase.resetPassword(new ResetPasswordRequestDto(EMAIL, CODE, "NewPass123!")));
     }
 
     @Test
-    void resetPassword_codigoIncorrecto_lanzaOtpInvalid() {
-        ResetPasswordRequestDto dtoMalo = ResetPasswordRequestDto.builder()
-                .email(EMAIL).code("000000").newPassword("NuevaPass123!").build();
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(
-                new UserDto("uid", EMAIL, "hash", true, RolEnum.STUDENT)));
-        when(passwordResetOtpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(resetOtpValido));
+    void shouldThrowWhenCodeAlreadyUsed() {
+        PasswordResetOtpCache usedCache = PasswordResetOtpCache.builder().email(EMAIL).code(CODE).used(true).build();
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(passwordResetOtpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(usedCache));
 
-        assertThatThrownBy(() -> resetPasswordUseCase.resetPassword(dtoMalo))
-                .isInstanceOf(OtpInvalidException.class);
+        assertThrows(OtpInvalidException.class, () ->
+                useCase.resetPassword(new ResetPasswordRequestDto(EMAIL, CODE, "NewPass123!")));
     }
 
     @Test
-    void resetPassword_codigoYaUsado_lanzaOtpInvalid() {
-        PasswordResetOtpCache usado = PasswordResetOtpCache.builder()
-                .email(EMAIL).code(CODE).used(true).build();
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(
-                new UserDto("uid", EMAIL, "hash", true, RolEnum.STUDENT)));
-        when(passwordResetOtpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(usado));
+    void shouldThrowWhenCodeIsInvalid() {
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(passwordResetOtpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(validCache));
 
-        assertThatThrownBy(() -> resetPasswordUseCase.resetPassword(dto))
-                .isInstanceOf(OtpInvalidException.class);
+        assertThrows(OtpInvalidException.class, () ->
+                useCase.resetPassword(new ResetPasswordRequestDto(EMAIL, "000000", "NewPass123!")));
     }
 }

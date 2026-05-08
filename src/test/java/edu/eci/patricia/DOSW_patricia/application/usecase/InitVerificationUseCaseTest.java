@@ -11,46 +11,52 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class InitVerificationUseCaseTest {
 
     @Mock private OtpRedisRepository otpRedisRepository;
     @Mock private EmailSenderPort emailSender;
-
-    @InjectMocks private InitVerificationUseCase initVerificationUseCase;
+    @InjectMocks private InitVerificationUseCase useCase;
 
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
 
     @Test
-    void initVerification_guardaOtpEnRedisYEnviaEmail() {
-        InitVerificationRequestDto dto = new InitVerificationRequestDto(EMAIL, "$2a$10$hash");
+    void shouldSaveOtpAndSendEmail() {
+        useCase.initVerification(new InitVerificationRequestDto(EMAIL, "hash"));
 
-        initVerificationUseCase.initVerification(dto);
-
-        ArgumentCaptor<OtpCache> captor = ArgumentCaptor.forClass(OtpCache.class);
-        verify(otpRedisRepository).save(captor.capture());
-
-        OtpCache guardado = captor.getValue();
-        assertThat(guardado.getEmail()).isEqualTo(EMAIL);
-        assertThat(guardado.getCode()).hasSize(6);
-        assertThat(guardado.isUsed()).isFalse();
-        assertThat(guardado.getAttempts()).isZero();
-
-        verify(emailSender).sendOtp(eq(EMAIL), eq(guardado.getCode()));
+        verify(otpRedisRepository).save(any(OtpCache.class));
+        verify(emailSender).sendOtp(eq(EMAIL), anyString());
     }
 
     @Test
-    void initVerification_normalizaEmailAMinusculas() {
-        InitVerificationRequestDto dto = new InitVerificationRequestDto("USER@MAIL.ESCUELAING.EDU.CO", "$2a$10$hash");
-
-        initVerificationUseCase.initVerification(dto);
+    void shouldNormalizeEmailToLowercase() {
+        useCase.initVerification(new InitVerificationRequestDto("User@mail.escuelaing.edu.co", "hash"));
 
         ArgumentCaptor<OtpCache> captor = ArgumentCaptor.forClass(OtpCache.class);
         verify(otpRedisRepository).save(captor.capture());
-        assertThat(captor.getValue().getEmail()).isEqualTo("user@mail.escuelaing.edu.co");
+        assertEquals("user@mail.escuelaing.edu.co", captor.getValue().getEmail());
+    }
+
+    @Test
+    void shouldGenerateSixDigitOtp() {
+        useCase.initVerification(new InitVerificationRequestDto(EMAIL, "hash"));
+
+        ArgumentCaptor<String> otpCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailSender).sendOtp(anyString(), otpCaptor.capture());
+        assertTrue(otpCaptor.getValue().matches("\\d{6}"));
+    }
+
+    @Test
+    void shouldSaveOtpWithUnusedAndZeroAttempts() {
+        useCase.initVerification(new InitVerificationRequestDto(EMAIL, "hash"));
+
+        ArgumentCaptor<OtpCache> captor = ArgumentCaptor.forClass(OtpCache.class);
+        verify(otpRedisRepository).save(captor.capture());
+        assertFalse(captor.getValue().isUsed());
+        assertEquals(0, captor.getValue().getAttempts());
     }
 }

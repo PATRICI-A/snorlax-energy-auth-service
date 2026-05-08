@@ -6,6 +6,7 @@ import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
+import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
 import edu.eci.patricia.DOSW_patricia.domain.valueobjects.RolEnum;
@@ -22,12 +23,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ValidateOtpUseCaseTest {
@@ -36,74 +34,83 @@ class ValidateOtpUseCaseTest {
     @Mock private RefreshTokenRepositoryPort refreshTokenRepository;
     @Mock private UserServicePort userServicePort;
     @Mock private JwtService jwtService;
-
-    @InjectMocks private ValidateOtpUseCase validateOtpUseCase;
+    @InjectMocks private ValidateOtpUseCase useCase;
 
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
-    private static final String CODE = "123456";
-    private static final String USER_ID = "user-uuid-001";
+    private static final String VALID_OTP = "123456";
 
-    private ValidateOtpRequestDto dto;
-    private OtpCache otpValido;
+    private OtpCache validOtpCache;
+    private UserDto user;
+    private RefreshToken savedToken;
 
     @BeforeEach
     void setUp() {
-        dto = ValidateOtpRequestDto.builder().email(EMAIL).otp(CODE).build();
-        otpValido = OtpCache.builder().email(EMAIL).code(CODE).used(false).attempts(0).build();
+        validOtpCache = OtpCache.builder().email(EMAIL).code(VALID_OTP).used(false).attempts(0).build();
+        user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
+        savedToken = new RefreshToken("id", "user-id", EMAIL, "access-token", "refresh-uuid",
+                LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), LocalDateTime.now().plusDays(7));
     }
 
     @Test
-    void validateOtp_codigoCorrecto_retornaTokensYMarcaVerificado() {
-        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(otpValido));
-        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(
-                new UserDto(USER_ID, EMAIL, "hash", true, RolEnum.STUDENT)));
-        when(jwtService.generateToken(USER_ID, EMAIL)).thenReturn("access-token");
+    void shouldValidateOtpAndReturnTokens() {
+        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(validOtpCache));
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
         when(jwtService.getJwtExpirationTime()).thenReturn(LocalDateTime.now().plusMinutes(15));
-        when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(refreshTokenRepository.save(any())).thenReturn(savedToken);
 
-        LoginResponseDto response = validateOtpUseCase.validateOtp(dto);
+        LoginResponseDto result = useCase.validateOtp(
+                ValidateOtpRequestDto.builder().email(EMAIL).otp(VALID_OTP).build());
 
-        assertThat(response.getAccessToken()).isEqualTo("access-token");
-        assertThat(response.getTokenType()).isEqualTo("Bearer");
-        verify(userServicePort).markUserAsVerified(EMAIL);
-        verify(otpRedisRepository).delete(otpValido);
+        assertNotNull(result);
+        assertEquals("Bearer", result.getTokenType());
+        verify(userServicePort).markUserAsVerified("user-id");
+        verify(otpRedisRepository).delete(validOtpCache);
     }
 
     @Test
-    void validateOtp_otpNoExisteEnRedis_lanzaOtpExpired() {
+    void shouldThrowOtpExpiredWhenNotInCache() {
         when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> validateOtpUseCase.validateOtp(dto))
-                .isInstanceOf(OtpExpiredException.class);
+        assertThrows(OtpExpiredException.class, () -> useCase.validateOtp(
+                ValidateOtpRequestDto.builder().email(EMAIL).otp(VALID_OTP).build()));
     }
 
     @Test
-    void validateOtp_otpYaUsado_lanzaOtpInvalid() {
-        OtpCache usado = OtpCache.builder().email(EMAIL).code(CODE).used(true).attempts(0).build();
-        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(usado));
+    void shouldThrowOtpInvalidWhenAlreadyUsed() {
+        OtpCache usedOtp = OtpCache.builder().email(EMAIL).code(VALID_OTP).used(true).attempts(0).build();
+        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(usedOtp));
 
-        assertThatThrownBy(() -> validateOtpUseCase.validateOtp(dto))
-                .isInstanceOf(OtpInvalidException.class);
+        assertThrows(OtpInvalidException.class, () -> useCase.validateOtp(
+                ValidateOtpRequestDto.builder().email(EMAIL).otp(VALID_OTP).build()));
     }
 
     @Test
-    void validateOtp_codigoIncorrecto_incrementaIntentos() {
-        ValidateOtpRequestDto dtoMalo = ValidateOtpRequestDto.builder().email(EMAIL).otp("999999").build();
-        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(otpValido));
+    void shouldThrowOtpInvalidAndIncrementAttemptsOnWrongCode() {
+        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(validOtpCache));
 
-        assertThatThrownBy(() -> validateOtpUseCase.validateOtp(dtoMalo))
-                .isInstanceOf(OtpInvalidException.class);
+        assertThrows(OtpInvalidException.class, () -> useCase.validateOtp(
+                ValidateOtpRequestDto.builder().email(EMAIL).otp("999999").build()));
         verify(otpRedisRepository).save(argThat(o -> o.getAttempts() == 1));
     }
 
     @Test
-    void validateOtp_tercerintentoFallido_eliminaOtpYLanzaMaxAttempts() {
-        OtpCache dosIntentos = OtpCache.builder().email(EMAIL).code(CODE).used(false).attempts(2).build();
-        ValidateOtpRequestDto dtoMalo = ValidateOtpRequestDto.builder().email(EMAIL).otp("999999").build();
-        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(dosIntentos));
+    void shouldThrowOtpMaxAttemptsAndDeleteOnThirdFailure() {
+        OtpCache twoAttempts = OtpCache.builder().email(EMAIL).code(VALID_OTP).used(false).attempts(2).build();
+        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(twoAttempts));
 
-        assertThatThrownBy(() -> validateOtpUseCase.validateOtp(dtoMalo))
-                .isInstanceOf(OtpMaxAttemptsException.class);
-        verify(otpRedisRepository).delete(dosIntentos);
+        assertThrows(OtpMaxAttemptsException.class, () -> useCase.validateOtp(
+                ValidateOtpRequestDto.builder().email(EMAIL).otp("999999").build()));
+        verify(otpRedisRepository).delete(twoAttempts);
+        verify(otpRedisRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowOtpInvalidWhenUserNotFoundAfterValidation() {
+        when(otpRedisRepository.findById(EMAIL)).thenReturn(Optional.of(validOtpCache));
+        when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+        assertThrows(OtpInvalidException.class, () -> useCase.validateOtp(
+                ValidateOtpRequestDto.builder().email(EMAIL).otp(VALID_OTP).build()));
     }
 }
