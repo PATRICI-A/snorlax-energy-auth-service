@@ -19,14 +19,14 @@ RUN mvn package -DskipTests -B
 # Imagen mínima con solo el JRE (sin Maven ni fuentes), reduce el tamaño final.
 FROM eclipse-temurin:21-jre-alpine
 
-# AWS Lambda Web Adapter: intercepta el evento Lambda y lo convierte en una
-# petición HTTP al servidor Spring Boot que corre localmente en PORT.
-COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 /lambda-adapter /opt/extensions/lambda-adapter
-
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# PORT debe coincidir con server.port de application.properties
-ENV PORT=9090
-EXPOSE 9090
+# Azure Container Apps enruta tráfico al puerto declarado en ingress (8080).
+ENV PORT=8080
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
