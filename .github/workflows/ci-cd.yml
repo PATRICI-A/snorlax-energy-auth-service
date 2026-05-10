@@ -61,7 +61,8 @@ jobs:
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -Dsonar.java.source=21
+            -Dsonar.java.source=21 \
+            -Dsonar.branch.name=main
 
       - name: Upload JaCoCo coverage report
         if: always()
