@@ -13,8 +13,6 @@ GitHub Actions
       │
       ├─ Job 1: Build + Tests + SonarCloud
       └─ Job 2: Deploy JAR → Azure App Service
-                              │
-                              └─ Kong API Gateway (registro manual / inicial)
 ```
 
 **Recursos que se crean en Azure:**
@@ -28,53 +26,61 @@ GitHub Actions
 
 ---
 
-## Paso 1 — Crear el Resource Group
+## Paso 0 — Crear los servicios externos (Redis y RabbitMQ)
 
-> Si ya existe `rg-patricia-prod` en el proyecto, salta este paso.
+> Haz esto **antes** de configurar Azure. Necesitas las credenciales para el Paso 4.
+
+### Redis — Upstash (free tier)
+
+1. Entra a [upstash.com](https://upstash.com) → crea una cuenta
+2. Clic en **+ Create Database**
+3. Llena los campos:
+   - **Name**: `<nombre-servicio>-redis`
+   - **Type**: `Regional`
+   - **Region**: la más cercana
+   - **TLS**: activado
+4. Clic en **Create**
+5. En la pantalla del database anota:
+   - **Endpoint** → es el `REDIS_HOST`
+   - **Port** → es el `REDIS_PORT` (normalmente `6379`)
+   - **Token** (clic en el ojo para verlo) → es el `REDIS_PASSWORD`
+   - `REDIS_SSL` = `true` (porque TLS está activado)
+
+### RabbitMQ — CloudAMQP (free tier)
+
+1. Entra a [cloudamqp.com](https://cloudamqp.com) → crea una cuenta
+2. Clic en **+ Create New Instance**
+3. Llena los campos:
+   - **Name**: `<nombre-servicio>-rabbit`
+   - **Plan**: `Little Lemur` (free)
+   - **Region**: la más cercana
+4. Clic en **Create instance**
+5. Entra a la instancia → sección **AMQP details** y anota:
+   - **Hosts** → es el `RABBITMQ_HOST`
+   - **Port**: `5672` → es el `RABBITMQ_PORT`
+   - **User & Vhost** → es el `RABBITMQ_USERNAME` y también el `SPRING_RABBITMQ_VIRTUAL_HOST`
+   - **Password** → es el `RABBITMQ_PASSWORD`
+
+> **Importante:** en CloudAMQP el Virtual Host es el mismo valor que el Username. Necesitas configurar `SPRING_RABBITMQ_VIRTUAL_HOST` con ese valor o la conexión fallará.
+
+---
+
+## Paso 1 — Crear el App Service
 
 1. Entra a [portal.azure.com](https://portal.azure.com)
-2. En la barra de búsqueda escribe **"Resource groups"** → clic en el resultado
-3. Clic en **+ Crear**
-4. Llena los campos:
+2. En la barra de búsqueda escribe **"App Services"** → clic en el resultado
+3. Clic en **+ Crear** → **Aplicación web**
+4. **Pestaña Datos básicos**:
    - **Suscripción**: la del proyecto
-   - **Grupo de recursos**: `rg-patricia-prod`
-   - **Región**: `Canada Central`
-5. Clic en **Revisar y crear** → **Crear**
-
----
-
-## Paso 2 — Crear el App Service Plan
-
-> Si ya existe `asp-patricia-prod` en el proyecto, salta este paso.
-
-1. En la barra de búsqueda escribe **"App Service plans"** → clic en el resultado
-2. Clic en **+ Crear**
-3. Llena los campos:
-   - **Suscripción**: la del proyecto
-   - **Grupo de recursos**: `rg-patricia-prod`
-   - **Nombre**: `asp-patricia-prod`
-   - **Sistema operativo**: `Linux`
-   - **Región**: `Canada Central`
-   - **Plan de tarifa**: `Basic B1`
-4. Clic en **Revisar y crear** → **Crear**
-
----
-
-## Paso 3 — Crear el App Service del microservicio
-
-1. En la barra de búsqueda escribe **"App Services"** → clic en el resultado
-2. Clic en **+ Crear** → **Aplicación web**
-3. **Pestaña Datos básicos**:
-   - **Suscripción**: la del proyecto
-   - **Grupo de recursos**: `rg-patricia-prod`
+   - **Grupo de recursos**: `rg-patricia-prod` (créalo nuevo si no existe, o selecciona el existente)
    - **Nombre**: `app-patricia-<nombre-servicio>`
    - **Publicar**: `Código`
    - **Pila del entorno de tiempo de ejecución**: `Java 21`
    - **Pila de servidor web Java**: `Java SE (Embedded Web Server)`
    - **Sistema operativo**: `Linux`
    - **Región**: `Canada Central`
-   - **Plan de App Service**: `asp-patricia-prod`
-4. Clic en **Revisar y crear** → **Crear**
+   - **Plan de App Service**: `asp-patricia-prod` (créalo nuevo si no existe, plan `Basic B1`, o selecciona el existente)
+5. Clic en **Revisar y crear** → **Crear**
 
 ---
 
@@ -105,6 +111,7 @@ GitHub Actions
 | `RABBITMQ_PORT` | Puerto de RabbitMQ (default: `5672`) |
 | `RABBITMQ_USERNAME` | Usuario de RabbitMQ |
 | `RABBITMQ_PASSWORD` | Contraseña de RabbitMQ |
+| `SPRING_RABBITMQ_VIRTUAL_HOST` | Virtual host de RabbitMQ (en CloudAMQP es igual al username) |
 | `MONGODB_URI` | URI de conexión a MongoDB Atlas |
 | `MONGODB_DATABASE` | Nombre de la base de datos |
 | `<NOMBRE>_SERVICE_URL` | URL base de otro microservicio |
@@ -210,27 +217,6 @@ Al terminar la app queda disponible en:
 
 ---
 
-## Paso 9 — Registrar en Kong
-
-Una vez desplegado, registra el microservicio en Kong para que el Gateway enrute el tráfico.
-
-```bash
-KONG_ADMIN="http://<url-de-tu-kong>:8001"
-APP_URL="https://app-patricia-<nombre-servicio>.azurewebsites.net"
-
-# Registrar el servicio
-curl -X PUT $KONG_ADMIN/services/<nombre-servicio> \
-  -H "Content-Type: application/json" \
-  -d "{\"name\":\"<nombre-servicio>\",\"url\":\"$APP_URL\"}"
-
-# Crear la ruta
-curl -X POST $KONG_ADMIN/services/<nombre-servicio>/routes \
-  -H "Content-Type: application/json" \
-  -d '{"name":"<nombre-servicio>-route","paths":["/api/v1/<ruta>"],"strip_path":false}'
-```
-
----
-
 ## Rollback
 
 Si un deploy falla y necesitas volver a una versión anterior:
@@ -274,6 +260,7 @@ Si un deploy falla y necesitas volver a una versión anterior:
 | RabbitMQ | `RABBITMQ_PORT` | Puerto (default: `5672`) |
 | RabbitMQ | `RABBITMQ_USERNAME` | Usuario |
 | RabbitMQ | `RABBITMQ_PASSWORD` | Contraseña |
+| RabbitMQ | `SPRING_RABBITMQ_VIRTUAL_HOST` | Virtual host (en CloudAMQP = mismo valor que username) |
 | MongoDB | `MONGODB_URI` | URI de conexión a Atlas |
 | MongoDB | `MONGODB_DATABASE` | Nombre de la base de datos |
 | Servicios | `<NOMBRE>_SERVICE_URL` | URL base de otro microservicio |
