@@ -42,10 +42,8 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Build, Test & SonarCloud analysis
+      - name: Build & Test
         env:
-          SONAR_TOKEN:            ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN:           ${{ secrets.GITHUB_TOKEN }}
           JWT_SECRET:             ${{ secrets.JWT_SECRET_TEST }}
           JWT_EXPIRATION:         '900000'
           REDIS_HOST:             localhost
@@ -55,8 +53,13 @@ jobs:
           MAIL_USERNAME:          'ci-noreply@example.com'
           MAIL_PASSWORD:          'dummy-ci-password'
           SPRING_PROFILES_ACTIVE: dev
-        run: |
-          mvn clean verify -B
+        run: mvn clean verify -B
+
+      - name: SonarCloud analysis
+        uses: SonarSource/sonarcloud-github-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
 
       - name: Upload JaCoCo coverage report
         if: always()
