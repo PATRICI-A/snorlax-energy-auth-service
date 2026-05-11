@@ -118,13 +118,18 @@ src/main/java/.../
 
 ## Diagramas de clases
 
-<!-- Insertar diagrama de clases aquí -->
+![alt text](src/main/resources/DiagramaClases.png)
 
 ---
 
 ## Diagrama de componentes
 
-<!-- Insertar diagrama de componentes aquí -->
+## GENERAL
+
+![alt text](<src/main/resources/componetes generales.png>)
+
+## ESPECIFICO
+
 
 ---
 
