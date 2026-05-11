@@ -130,6 +130,7 @@ src/main/java/.../
 
 ## ESPECIFICO
 
+![alt text](<src/main/resources/componentes especificos.png>)
 
 ---
 
