@@ -11,18 +11,29 @@ Esta guía aplica para **cualquier microservicio** del proyecto. Reemplaza los v
 ```
 GitHub Actions
       │
-      ├─ Job 1: Build + Tests + SonarCloud
-      └─ Job 2: Deploy JAR → Azure App Service
+      ├─ ci.yml     → Build + Tests (push y PR a main/develop)
+      ├─ sonar.yml  → SonarCloud analysis (push y PR a main/develop)
+      └─ cd.yml     → Deploy JAR → Azure App Service (solo cuando ci.yml pasa en main)
 ```
+
+### Workflows del pipeline
+
+| Archivo | Propósito | Trigger |
+|---|---|---|
+| `ci.yml` | Build, tests, sube artefactos (JAR, JaCoCo, Surefire) | Push y PR a `main`/`develop` |
+| `sonar.yml` | Análisis de calidad con SonarCloud | Push y PR a `main`/`develop` |
+| `cd.yml` | Deploy del JAR a Azure App Service | Cuando `ci.yml` pasa en `main` |
+
+> El deploy es **automático** — al mergear a `main` y pasar el CI, el JAR se despliega solo a Azure.
 
 **Recursos que se crean en Azure:**
 
-| Recurso | Nombre sugerido | Nota |
+| Recurso | Nombre | Nota |
 |---|---|---|
-| Resource Group | `rg-patricia-prod` | Uno para todo el proyecto |
-| App Service Plan | `asp-patricia-prod` | Uno para todo el proyecto |
+| Resource Group | `patricia-prod` | Ya creado — pídele acceso a Sebastian |
+| App Service Plan | `ASP-LIBREBIAgroup-942d` | Ya creado — selecciónalo al crear tu App Service |
 | App Service | `app-patricia-<nombre-servicio>` | Uno por microservicio |
-| Service Principal | `sp-patricia-github-actions` | Uno para todo el proyecto |
+| Service Principal | `sp-patricia-github-actions` | Créalo tú para tu propio repo |
 
 ---
 
@@ -72,19 +83,19 @@ GitHub Actions
 3. Clic en **+ Crear** → **Aplicación web**
 4. **Pestaña Datos básicos**:
    - **Suscripción**: la del proyecto
-   - **Grupo de recursos**: `rg-patricia-prod` (créalo nuevo si no existe, o selecciona el existente)
+   - **Grupo de recursos**: selecciona `patricia-prod` (ya existe, pídele acceso a Sebastian si no lo ves)
    - **Nombre**: `app-patricia-<nombre-servicio>`
    - **Publicar**: `Código`
    - **Pila del entorno de tiempo de ejecución**: `Java 21`
    - **Pila de servidor web Java**: `Java SE (Embedded Web Server)`
    - **Sistema operativo**: `Linux`
    - **Región**: `Canada Central`
-   - **Plan de App Service**: `asp-patricia-prod` (créalo nuevo si no existe, plan `Basic B1`, o selecciona el existente)
+   - **Plan de App Service**: selecciona `ASP-LIBREBIAgroup-942d` (ya existe)
 5. Clic en **Revisar y crear** → **Crear**
 
 ---
 
-## Paso 4 — Configurar variables de entorno
+## Paso 2 — Configurar variables de entorno
 
 1. Entra al App Service `app-patricia-<nombre-servicio>`
 2. En el menú izquierdo → **Configuración** → **Variables de entorno**
@@ -120,49 +131,26 @@ GitHub Actions
 
 ---
 
-## Paso 5 — Crear el Service Principal para GitHub Actions
+## Paso 3 — Obtener las credenciales de Azure (AZURE_CREDENTIALS)
 
-> Si ya existe `sp-patricia-github-actions` en el proyecto, pídele el JSON `AZURE_CREDENTIALS` al compañero que lo creó y salta al Paso 6.
+> El Service Principal ya está creado y tiene acceso al Resource Group `patricia-prod`. **Pídele a Sebastian el JSON `AZURE_CREDENTIALS`** — es el mismo para todos los microservicios del proyecto.
 
-1. En la barra de búsqueda escribe **"Microsoft Entra ID"** → clic en el resultado
-2. En el menú izquierdo → **Administrar** → **Registros de aplicaciones**
-3. Clic en **+ Nuevo registro**:
-   - **Nombre**: `sp-patricia-github-actions`
-   - Todo lo demás por defecto
-   - Clic en **Registrar**
-4. Anota estos dos valores de la pantalla de Overview:
-   - **Id. de aplicación (cliente)** → este es el `clientId`
-   - **Id. de directorio (inquilino)** → este es el `tenantId`
-5. En el menú izquierdo → **Certificados y secretos** → **+ Nuevo secreto de cliente**:
-   - **Descripción**: `github-actions`
-   - **Expira**: `24 months`
-   - Clic en **Agregar**
-   - Copia el **Valor** inmediatamente — solo se muestra una vez → este es el `clientSecret`
-6. Asignar el rol al App Service:
-   - Busca y entra al App Service `app-patricia-<nombre-servicio>`
-   - Menú izquierdo → **Control de acceso (IAM)**
-   - Clic en **+ Agregar** → **Agregar asignación de roles**
-   - Busca y selecciona **Colaborador** → **Siguiente**
-   - Clic en **+ Seleccionar miembros** → busca `sp-patricia-github-actions` → **Seleccionar**
-   - Clic en **Revisar y asignar**
-7. Obtén el **Subscription ID**:
-   - En la barra de búsqueda escribe **"Suscripciones"**
-   - Copia el **ID de suscripción** → este es el `subscriptionId`
-
-Con esos 4 datos construye el JSON para el secret `AZURE_CREDENTIALS`:
+El JSON tiene este formato (Sebastian te lo comparte por el canal del equipo):
 
 ```json
 {
-  "clientId":       "<Id. de aplicación (cliente)>",
-  "clientSecret":   "<Valor del secreto>",
-  "tenantId":       "<Id. de directorio (inquilino)>",
-  "subscriptionId": "<ID de suscripción>"
+  "clientId":       "...",
+  "clientSecret":   "...",
+  "tenantId":       "...",
+  "subscriptionId": "..."
 }
 ```
 
+Guárdalo completo — lo usarás en el Paso 4.
+
 ---
 
-## Paso 6 — Configurar Secrets en GitHub
+## Paso 4 — Configurar Secrets en GitHub
 
 1. Ve al repositorio en GitHub
 2. **Settings** → **Secrets and variables** → **Actions**
@@ -179,22 +167,30 @@ Con esos 4 datos construye el JSON para el secret `AZURE_CREDENTIALS`:
 
 ---
 
-## Paso 7 — Configurar SonarCloud
+## Paso 5 — Configurar SonarCloud
 
 1. Entra a [sonarcloud.io](https://sonarcloud.io) con tu cuenta de GitHub
 2. Clic en **+** (arriba a la derecha) → **Analyze new project**
-3. Selecciona tu repositorio → **Set up**
-4. Elige **GitHub Actions** como método de análisis
-5. Para obtener el `SONAR_TOKEN`:
-   - Clic en tu avatar (arriba a la derecha) → **My Account**
-   - Pestaña **Security** → escribe un nombre → **Generate**
-   - Copia el token generado
-6. El `SONAR_PROJECT_KEY` y `SONAR_ORGANIZATION` aparecen en la pantalla de configuración del proyecto
-7. En SonarCloud → **Administration** → **Analysis Method** → desactiva **Automatic Analysis**
+3. En el dropdown de Organization selecciona tu organización
+   - Si dice **"You don't have permission to create projects"** → clic en **"create a project manually"** (link arriba a la derecha)
+   - Crea una organización nueva con el nombre de tu servicio → plan **Free**
+4. Crea el proyecto:
+   - **Display Name**: `<nombre-servicio>`
+   - **Project Key**: `<org-key>_<nombre-servicio>`
+   - **Visibility**: `Public`
+   - Clic en **Next** → selecciona **With GitHub Actions**
+5. Copia el `SONAR_TOKEN` que aparece en pantalla y agrégalo como secret en GitHub (Paso 4)
+6. Selecciona **Maven** como tipo de proyecto
+7. Anota el **Project Key** y el **Organization Key** — los necesitas para el `sonar-project.properties`
+8. Actualiza el archivo `sonar-project.properties` en tu repo:
+   ```properties
+   sonar.projectKey=<project-key>
+   sonar.organization=<organization-key>
+   ```
 
 ---
 
-## Paso 8 — Primer despliegue
+## Paso 6 — Primer despliegue
 
 En tu terminal, desde la carpeta del proyecto:
 
@@ -239,8 +235,8 @@ Si un deploy falla y necesitas volver a una versión anterior:
 
 | Recurso | Convención | Ejemplo |
 |---|---|---|
-| Resource Group | `rg-patricia-<entorno>` | `rg-patricia-prod` |
-| App Service Plan | `asp-patricia-<entorno>` | `asp-patricia-prod` |
+| Resource Group | `rg-patricia-<entorno>` | `patricia-prod` |
+| App Service Plan | `asp-patricia-<entorno>` | `ASP-LIBREBIAgroup-942d` |
 | App Service | `app-patricia-<servicio>` | `app-patricia-auth` |
 | Service Principal | `sp-patricia-github-actions` | (fijo para todo el proyecto) |
 
