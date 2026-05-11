@@ -486,7 +486,7 @@ docker run -p 8080:8080 \
 
 ## Link expuesto en Azure con Swagger
 
-<!-- Insertar URL de producción con Swagger aquí (formato: https://ca-auth-service.<id>.eastus.azurecontainerapps.io) -->
+![<!-- Insertar URL de producción con Swagger aquí (formato: https://ca-auth-service.<id>.eastus.azurecontainerapps.io) -->](src/main/resources/despliegue.png)
 
 ---
 
