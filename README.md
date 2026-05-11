@@ -397,7 +397,7 @@ Consumido por el servicio de notificaciones para enviar el código de recuperaci
 
 ## Evidencia de pruebas unitarias
 
-<!-- Insertar capturas de pantalla de la ejecución de pruebas aquí -->
+![alt text](src/main/resources/unitarias.png)
 
 Las pruebas cubren:
 
@@ -411,7 +411,7 @@ Las pruebas cubren:
 
 ## Evidencia del análisis de cobertura
 
-<!-- Insertar captura del reporte JaCoCo aquí -->
+![alt text](src/main/resources/jacoco.png)
 
 La cobertura mínima requerida es **80% de instrucciones** (verificado por JaCoCo en la fase `verify`).
 El reporte HTML se genera en `target/site/jacoco/index.html` y el XML en `target/site/jacoco/jacoco.xml` (consumido por SonarQube).
@@ -480,13 +480,15 @@ docker run -p 8080:8080 \
 
 ## Evidencia del despliegue CI/CD
 
-<!-- Insertar capturas del pipeline de GitHub Actions aquí -->
+![alt text](src/main/resources/despliegue.png)
+
+![alt text](<src/main/resources/evidencia despligue.png>)
 
 ---
 
 ## Link expuesto en Azure con Swagger
 
-![<!-- Insertar URL de producción con Swagger aquí (formato: https://ca-auth-service.<id>.eastus.azurecontainerapps.io) -->](src/main/resources/despliegue.png)
+
 
 ---
 
