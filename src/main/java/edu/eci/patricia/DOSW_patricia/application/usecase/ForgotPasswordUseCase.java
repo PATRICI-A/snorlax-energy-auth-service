@@ -23,7 +23,7 @@ public class ForgotPasswordUseCase implements ForgotPasswordPort {
     public void forgotPassword(String email) {
         String normalizedEmail = email.trim().toLowerCase();
 
-        userServicePort.findByEmail(normalizedEmail)
+        var user = userServicePort.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new OtpInvalidException("No account found with that email"));
 
         String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));
@@ -35,6 +35,6 @@ public class ForgotPasswordUseCase implements ForgotPasswordPort {
                 .build();
 
         passwordResetOtpRedisRepository.save(resetOtp);
-        emailSender.sendPasswordReset(normalizedEmail, code);
+        emailSender.sendPasswordReset(normalizedEmail, code, user.id());
     }
 }

@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
@@ -26,14 +27,15 @@ class ChangePasswordUseCaseTest {
     @Mock private PasswordEncoder passwordEncoder;
     @InjectMocks private ChangePasswordUseCase useCase;
 
-    private static final String USER_ID = "user-id";
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final String USER_ID = USER_UUID.toString();
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
     private static final String CURRENT = "OldPass!";
     private static final String HASHED = "$2a$10$hash";
 
     @Test
     void shouldChangePasswordSuccessfully() {
-        UserDto user = new UserDto(USER_ID, EMAIL, HASHED, true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, HASHED, true, RolEnum.STUDENT);
         when(userServicePort.findById(USER_ID)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(CURRENT, HASHED)).thenReturn(true);
         when(passwordEncoder.encode("NewPass!")).thenReturn("new-hashed");
@@ -53,7 +55,7 @@ class ChangePasswordUseCaseTest {
 
     @Test
     void shouldThrowWhenCurrentPasswordIsWrong() {
-        UserDto user = new UserDto(USER_ID, EMAIL, HASHED, true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, HASHED, true, RolEnum.STUDENT);
         when(userServicePort.findById(USER_ID)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(CURRENT, HASHED)).thenReturn(false);
 

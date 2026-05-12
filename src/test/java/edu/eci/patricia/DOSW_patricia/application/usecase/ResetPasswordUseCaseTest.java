@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
@@ -30,6 +31,7 @@ class ResetPasswordUseCaseTest {
     @Mock private PasswordEncoder passwordEncoder;
     @InjectMocks private ResetPasswordUseCase useCase;
 
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
     private static final String CODE = "123456";
 
@@ -38,7 +40,7 @@ class ResetPasswordUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
         validCache = PasswordResetOtpCache.builder().email(EMAIL).code(CODE).used(false).build();
     }
 
@@ -50,7 +52,7 @@ class ResetPasswordUseCaseTest {
 
         useCase.resetPassword(new ResetPasswordRequestDto(EMAIL, CODE, "NewPass123!"));
 
-        verify(userServicePort).updatePassword("user-id", "new-hashed");
+        verify(userServicePort).updatePassword(USER_UUID.toString(), "new-hashed");
         verify(passwordResetOtpRedisRepository).save(argThat(PasswordResetOtpCache::isUsed));
     }
 

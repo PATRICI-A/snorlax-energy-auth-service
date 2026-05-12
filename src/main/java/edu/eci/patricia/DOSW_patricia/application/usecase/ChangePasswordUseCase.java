@@ -27,6 +27,6 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
         }
 
         String newHashedPassword = passwordEncoder.encode(dto.getNewPassword());
-        userServicePort.updatePassword(user.id(), newHashedPassword);
+        userServicePort.updatePassword(user.id().toString(), newHashedPassword);
     }
 }

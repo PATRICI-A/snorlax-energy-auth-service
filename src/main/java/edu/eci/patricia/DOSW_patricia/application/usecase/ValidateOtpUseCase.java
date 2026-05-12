@@ -60,14 +60,14 @@ public class ValidateOtpUseCase implements ValidateOtpPort {
         UserDto user = userServicePort.findByEmail(email)
                 .orElseThrow(() -> new OtpInvalidException("User not found"));
 
-        userServicePort.markUserAsVerified(user.id());
+        userServicePort.markUserAsVerified(user.id().toString());
 
-        String accessToken = jwtService.generateToken(user.id(), email);
-        refreshTokenRepository.deleteByUserId(user.id());
+        String accessToken = jwtService.generateToken(user.id().toString(), email);
+        refreshTokenRepository.deleteByUserId(user.id().toString());
 
         RefreshToken session = new RefreshToken(
                 UUID.randomUUID().toString(),
-                user.id(),
+                user.id().toString(),
                 email,
                 accessToken,
                 UUID.randomUUID().toString(),

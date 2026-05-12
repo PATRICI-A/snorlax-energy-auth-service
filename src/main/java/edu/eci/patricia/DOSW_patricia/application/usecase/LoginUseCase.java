@@ -60,7 +60,7 @@ public class LoginUseCase implements LoginPort {
 
         lockoutRedisRepository.deleteById(email);
 
-        String userId = user.id();
+        String userId = user.id().toString();
         String accessToken = jwtService.generateToken(userId, email);
 
         refreshTokenRepository.deleteByUserId(userId);
