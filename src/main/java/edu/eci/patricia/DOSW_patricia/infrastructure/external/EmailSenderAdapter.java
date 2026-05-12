@@ -17,21 +17,33 @@ public class EmailSenderAdapter implements EmailSenderPort {
 
     @Override
     public void sendOtp(String to, String otpCode) {
-        log.info("Publicando OTP event para {}", to);
-        rabbitTemplate.convertAndSend(
-                "auth.exchange",
-                "auth.otp.verification",
-                new OtpVerificationEventDto(to, otpCode)
-        );
+        log.info("========================================");
+        log.info("[DEV] OTP para {}: {}", to, otpCode);
+        log.info("========================================");
+        try {
+            rabbitTemplate.convertAndSend(
+                    "auth.exchange",
+                    "auth.otp.verification",
+                    new OtpVerificationEventDto(to, otpCode)
+            );
+        } catch (Exception e) {
+            log.warn("[DEV] RabbitMQ no disponible — OTP no enviado por email (usa el codigo del log): {}", e.getMessage());
+        }
     }
 
     @Override
-    public void sendPasswordReset(String to, String code) {
-        log.info("Publicando password reset event para {}", to);
-        rabbitTemplate.convertAndSend(
-                "auth.exchange",
-                "auth.password.reset",
-                new PasswordResetEventDto(to, code, null)
-        );
+    public void sendPasswordReset(String to, String code, java.util.UUID userId) {
+        log.info("========================================");
+        log.info("[DEV] Codigo de recuperacion para {}: {}", to, code);
+        log.info("========================================");
+        try {
+            rabbitTemplate.convertAndSend(
+                    "auth.exchange",
+                    "auth.password.reset",
+                    new PasswordResetEventDto(to, code, userId.toString())
+            );
+        } catch (Exception e) {
+            log.warn("[DEV] RabbitMQ no disponible — codigo no enviado por email (usa el codigo del log): {}", e.getMessage());
+        }
     }
 }

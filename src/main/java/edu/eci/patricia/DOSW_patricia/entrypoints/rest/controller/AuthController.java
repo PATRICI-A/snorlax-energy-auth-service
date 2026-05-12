@@ -25,6 +25,7 @@ import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -131,6 +132,7 @@ public class AuthController {
         return ResponseEntity.ok(refreshTokenPort.refresh(request.getRefreshToken()));
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Logout",
             description = "Invalidates the current session by deleting the refresh token associated with the Bearer token.")
@@ -175,6 +177,7 @@ public class AuthController {
         return ResponseEntity.ok(new RegisterResponseDto("Password updated successfully"));
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Change password",
             description = "Allows an authenticated user to change their password. " +

@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -28,17 +29,18 @@ class ForgotPasswordUseCaseTest {
     @Mock private EmailSenderPort emailSender;
     @InjectMocks private ForgotPasswordUseCase useCase;
 
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
 
     @Test
     void shouldSendResetCodeSuccessfully() {
-        UserDto user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.forgotPassword(EMAIL);
 
         verify(passwordResetOtpRedisRepository).save(any(PasswordResetOtpCache.class));
-        verify(emailSender).sendPasswordReset(eq(EMAIL), anyString());
+        verify(emailSender).sendPasswordReset(eq(EMAIL), anyString(), eq(USER_UUID));
     }
 
     @Test
@@ -50,7 +52,7 @@ class ForgotPasswordUseCaseTest {
 
     @Test
     void shouldNormalizeEmailToLowercase() {
-        UserDto user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.forgotPassword("USER@mail.escuelaing.edu.co");
@@ -60,7 +62,7 @@ class ForgotPasswordUseCaseTest {
 
     @Test
     void shouldSaveSixDigitResetCode() {
-        UserDto user = new UserDto("user-id", EMAIL, "hashed", true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.forgotPassword(EMAIL);

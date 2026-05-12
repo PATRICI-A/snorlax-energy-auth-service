@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,6 +37,7 @@ class ValidateOtpUseCaseTest {
     @Mock private JwtService jwtService;
     @InjectMocks private ValidateOtpUseCase useCase;
 
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
     private static final String VALID_OTP = "123456";
 
@@ -46,8 +48,8 @@ class ValidateOtpUseCaseTest {
     @BeforeEach
     void setUp() {
         validOtpCache = OtpCache.builder().email(EMAIL).code(VALID_OTP).used(false).attempts(0).build();
-        user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
-        savedToken = new RefreshToken("id", "user-id", EMAIL, "access-token", "refresh-uuid",
+        user = new UserDto(USER_UUID, EMAIL, "hashed", false, RolEnum.STUDENT);
+        savedToken = new RefreshToken("id", USER_UUID.toString(), EMAIL, "access-token", "refresh-uuid",
                 LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), LocalDateTime.now().plusDays(7));
     }
 
@@ -64,7 +66,7 @@ class ValidateOtpUseCaseTest {
 
         assertNotNull(result);
         assertEquals("Bearer", result.getTokenType());
-        verify(userServicePort).markUserAsVerified("user-id");
+        verify(userServicePort).markUserAsVerified(USER_UUID.toString());
         verify(otpRedisRepository).delete(validOtpCache);
     }
 
