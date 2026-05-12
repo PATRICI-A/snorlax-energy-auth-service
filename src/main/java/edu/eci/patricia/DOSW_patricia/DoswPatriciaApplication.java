@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @OpenAPIDefinition(info = @Info(title = "PATRICIA Auth Service", version = "v1"))
 @SecurityScheme(
@@ -16,6 +17,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         bearerFormat = "JWT",
         in = SecuritySchemeIn.HEADER
 )
+@EnableFeignClients
 @SpringBootApplication
 public class DoswPatriciaApplication {
 
