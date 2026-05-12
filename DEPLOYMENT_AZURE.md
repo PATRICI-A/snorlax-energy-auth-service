@@ -158,11 +158,11 @@ Guárdalo completo — lo usarás en el Paso 4.
 
 | Secret | Valor |
 |---|---|
-| `AZURE_CREDENTIALS` | El JSON completo del Paso 5 |
+| `AZURE_CREDENTIALS` | El JSON completo del Paso 3 |
 | `AZURE_APP_SERVICE_NAME` | `app-patricia-<nombre-servicio>` |
-| `SONAR_TOKEN` | Token generado en SonarCloud (Paso 7) |
-| `SONAR_PROJECT_KEY` | Project key de SonarCloud (Paso 7) |
-| `SONAR_ORGANIZATION` | Organización de SonarCloud (Paso 7) |
+| `SONAR_TOKEN` | Token generado en SonarCloud (Paso 5) |
+| `SONAR_PROJECT_KEY` | Project key de SonarCloud (Paso 5) |
+| `SONAR_ORGANIZATION` | Organización de SonarCloud (Paso 5) |
 | `JWT_SECRET_TEST` | Cualquier string de ≥ 32 caracteres (solo para CI) |
 
 ---
@@ -203,8 +203,8 @@ git push origin main
 Ve a GitHub → pestaña **Actions** y verás el pipeline corriendo:
 
 ```
-build-test-analyze  →  deploy-to-azure
-     ~3-5 min              ~1-2 min
+ci.yml (~3-5 min)  →  cd.yml (~1-2 min)
+sonar.yml (~3 min)    (en paralelo con ci.yml)
 ```
 
 Al terminar la app queda disponible en:
