@@ -12,15 +12,15 @@ import java.util.Map;
 @FeignClient(name = "user-service", url = "${user.service.url}", dismiss404 = true)
 public interface UserServiceFeignClient {
 
-    @GetMapping("/api/users/email/{email}")
+    @GetMapping("/api/v1/internal/users/mail/{email}")
     UserDto findByEmail(@PathVariable("email") String email);
 
-    @GetMapping("/api/users/{userId}")
+    @GetMapping("/api/v1/internal/users/{userId}")
     UserDto findById(@PathVariable("userId") String userId);
 
-    @PatchMapping("/api/users/{userId}/verify")
+    @PatchMapping("/api/v1/internal/users/{userId}/verify")
     void markUserAsVerified(@PathVariable("userId") String userId);
 
-    @PatchMapping("/api/users/{userId}/password")
+    @PatchMapping("/api/v1/internal/users/{userId}/password")
     void updatePassword(@PathVariable("userId") String userId, @RequestBody Map<String, String> body);
 }
