@@ -38,6 +38,6 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
         passwordResetOtpRedisRepository.save(resetOtp);
 
         String newHashedPassword = passwordEncoder.encode(dto.getNewPassword());
-        userServicePort.updatePassword(user.id(), newHashedPassword);
+        userServicePort.updatePassword(user.id().toString(), newHashedPassword);
     }
 }

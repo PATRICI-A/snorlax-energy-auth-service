@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -28,11 +29,12 @@ class ResendOtpUseCaseTest {
     @Mock private EmailSenderPort emailSender;
     @InjectMocks private ResendOtpUseCase useCase;
 
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
 
     @Test
     void shouldResendOtpSuccessfully() {
-        UserDto user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", false, RolEnum.STUDENT);
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.resendOtp(EMAIL);
@@ -50,7 +52,7 @@ class ResendOtpUseCaseTest {
 
     @Test
     void shouldNormalizeEmailToLowercase() {
-        UserDto user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", false, RolEnum.STUDENT);
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.resendOtp("USER@mail.escuelaing.edu.co");
@@ -60,7 +62,7 @@ class ResendOtpUseCaseTest {
 
     @Test
     void shouldSaveNewOtpWithZeroAttempts() {
-        UserDto user = new UserDto("user-id", EMAIL, "hashed", false, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", false, RolEnum.STUDENT);
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.resendOtp(EMAIL);

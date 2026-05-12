@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -38,6 +39,7 @@ class LoginUseCaseTest {
     @Mock private PasswordEncoder passwordEncoder;
     @InjectMocks private LoginUseCase useCase;
 
+    private static final UUID USER_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String EMAIL = "user@mail.escuelaing.edu.co";
     private static final String PASSWORD = "Test1234!";
     private static final String HASHED = "$2a$10$hash";
@@ -48,9 +50,9 @@ class LoginUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        verifiedUser = new UserDto("user-id", EMAIL, HASHED, true, RolEnum.STUDENT);
-        unverifiedUser = new UserDto("user-id", EMAIL, HASHED, false, RolEnum.STUDENT);
-        savedToken = new RefreshToken("id", "user-id", EMAIL, "access-token", "refresh-uuid",
+        verifiedUser = new UserDto(USER_UUID, EMAIL, HASHED, true, RolEnum.STUDENT);
+        unverifiedUser = new UserDto(USER_UUID, EMAIL, HASHED, false, RolEnum.STUDENT);
+        savedToken = new RefreshToken("id", USER_UUID.toString(), EMAIL, "access-token", "refresh-uuid",
                 LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), LocalDateTime.now().plusDays(7));
     }
 
