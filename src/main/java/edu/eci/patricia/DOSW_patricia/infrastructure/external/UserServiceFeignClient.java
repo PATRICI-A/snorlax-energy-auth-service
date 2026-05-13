@@ -21,6 +21,6 @@ public interface UserServiceFeignClient {
     @PatchMapping("/api/v1/internal/users/{userId}/verify")
     void markUserAsVerified(@PathVariable("userId") String userId);
 
-    @PatchMapping("/api/v1/users/{userId}/password")
+    @PatchMapping("/api/v1/internal/users/{userId}/password")
     void updatePassword(@PathVariable("userId") String userId, @RequestBody Map<String, String> body);
 }
