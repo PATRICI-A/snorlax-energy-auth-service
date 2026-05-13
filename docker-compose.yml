@@ -17,6 +17,17 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: patricia-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: unless-stopped
+
   sonarqube:
     image: sonarqube:community
     container_name: patricia-sonarqube

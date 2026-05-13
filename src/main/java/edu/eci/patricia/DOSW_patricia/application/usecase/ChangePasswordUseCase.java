@@ -22,7 +22,7 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
         UserDto user = userServicePort.findById(dto.getUserId())
                 .orElseThrow(() -> new TokenInvalidException("User not found"));
 
-        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.hashedPassword())) {
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.passwordHash())) {
             throw new InvalidCredentialsException();
         }
 
