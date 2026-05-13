@@ -46,7 +46,7 @@ public class LoginUseCase implements LoginPort {
             }
         });
 
-        if (!passwordEncoder.matches(dto.getPassword(), user.hashedPassword())) {
+        if (!passwordEncoder.matches(dto.getPassword(), user.passwordHash())) {
             LockoutCache lockout = lockoutRedisRepository.findById(email)
                     .orElse(LockoutCache.builder().email(email).failedAttempts(0).build());
             lockout.setFailedAttempts(lockout.getFailedAttempts() + 1);

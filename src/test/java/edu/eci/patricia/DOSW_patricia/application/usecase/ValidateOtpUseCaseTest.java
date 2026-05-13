@@ -9,7 +9,6 @@ import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
 import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
-import edu.eci.patricia.DOSW_patricia.domain.valueobjects.RolEnum;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.OtpCache;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository.OtpRedisRepository;
 import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
@@ -48,7 +47,7 @@ class ValidateOtpUseCaseTest {
     @BeforeEach
     void setUp() {
         validOtpCache = OtpCache.builder().email(EMAIL).code(VALID_OTP).used(false).attempts(0).build();
-        user = new UserDto(USER_UUID, EMAIL, "hashed", false, RolEnum.STUDENT);
+        user = new UserDto(USER_UUID, EMAIL, "hashed", false, "STUDENT");
         savedToken = new RefreshToken("id", USER_UUID.toString(), EMAIL, "access-token", "refresh-uuid",
                 LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), LocalDateTime.now().plusDays(7));
     }

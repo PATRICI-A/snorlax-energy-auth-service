@@ -5,7 +5,6 @@ import edu.eci.patricia.DOSW_patricia.application.dto.request.ChangePasswordRequ
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.InvalidCredentialsException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
-import edu.eci.patricia.DOSW_patricia.domain.valueobjects.RolEnum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,7 +34,7 @@ class ChangePasswordUseCaseTest {
 
     @Test
     void shouldChangePasswordSuccessfully() {
-        UserDto user = new UserDto(USER_UUID, EMAIL, HASHED, true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, HASHED, true, "STUDENT");
         when(userServicePort.findById(USER_ID)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(CURRENT, HASHED)).thenReturn(true);
         when(passwordEncoder.encode("NewPass!")).thenReturn("new-hashed");
@@ -55,7 +54,7 @@ class ChangePasswordUseCaseTest {
 
     @Test
     void shouldThrowWhenCurrentPasswordIsWrong() {
-        UserDto user = new UserDto(USER_UUID, EMAIL, HASHED, true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, HASHED, true, "STUDENT");
         when(userServicePort.findById(USER_ID)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(CURRENT, HASHED)).thenReturn(false);
 

@@ -4,7 +4,6 @@ import edu.eci.patricia.DOSW_patricia.application.dto.external.UserDto;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.EmailSenderPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
-import edu.eci.patricia.DOSW_patricia.domain.valueobjects.RolEnum;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.PasswordResetOtpCache;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository.PasswordResetOtpRedisRepository;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ class ForgotPasswordUseCaseTest {
 
     @Test
     void shouldSendResetCodeSuccessfully() {
-        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, "STUDENT");
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.forgotPassword(EMAIL);
@@ -52,7 +51,7 @@ class ForgotPasswordUseCaseTest {
 
     @Test
     void shouldNormalizeEmailToLowercase() {
-        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, "STUDENT");
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.forgotPassword("USER@mail.escuelaing.edu.co");
@@ -62,7 +61,7 @@ class ForgotPasswordUseCaseTest {
 
     @Test
     void shouldSaveSixDigitResetCode() {
-        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
+        UserDto user = new UserDto(USER_UUID, EMAIL, "hashed", true, "STUDENT");
         when(userServicePort.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
         useCase.forgotPassword(EMAIL);
