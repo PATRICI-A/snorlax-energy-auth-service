@@ -1,0 +1,58 @@
+name: QA – SonarCloud
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  sonar:
+    name: "QA – SonarCloud Analysis"
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21 with Maven cache
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Build & Test (genera clases y reporte JaCoCo para Sonar)
+        env:
+          JWT_SECRET:             ${{ secrets.JWT_SECRET_TEST }}
+          JWT_EXPIRATION:         '900000'
+          REDIS_HOST:             localhost
+          REDIS_PORT:             '6379'
+          USER_SERVICE_URL:       'http://localhost:8099'
+          MAIL_DEV_MODE:          'true'
+          MAIL_USERNAME:          'ci-noreply@example.com'
+          MAIL_PASSWORD:          'dummy-ci-password'
+          SPRING_PROFILES_ACTIVE: dev
+        run: mvn clean verify -B
+
+      - name: SonarCloud analysis
+        uses: SonarSource/sonarcloud-github-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}

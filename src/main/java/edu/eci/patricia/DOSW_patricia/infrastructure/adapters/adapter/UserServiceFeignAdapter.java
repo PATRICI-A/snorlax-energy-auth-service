@@ -4,13 +4,11 @@ import edu.eci.patricia.DOSW_patricia.application.dto.external.UserDto;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
 import edu.eci.patricia.DOSW_patricia.infrastructure.external.UserServiceFeignClient;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
 
-@Primary
 @Component
 @RequiredArgsConstructor
 public class UserServiceFeignAdapter implements UserServicePort {
