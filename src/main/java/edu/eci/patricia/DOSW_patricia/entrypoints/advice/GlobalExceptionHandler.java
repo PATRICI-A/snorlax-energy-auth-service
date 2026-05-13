@@ -10,6 +10,8 @@ import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.UserAlreadyExistsException;
+import feign.FeignException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,8 +20,28 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponse> handleFeignException(FeignException ex) {
+        log.error("Error calling external service: status={} message={}", ex.status(), ex.getMessage());
+        if (ex.status() == 404) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ErrorResponse.of("EXTERNAL_SERVICE_NOT_FOUND", "Resource not found in external service", null));
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ErrorResponse.of("EXTERNAL_SERVICE_ERROR",
+                        "External service unavailable (status " + ex.status() + ")", null));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        log.error("Unhandled exception", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of("INTERNAL_ERROR", "An unexpected error occurred", null));
+    }
 
     @ExceptionHandler(InvalidEmailDomainException.class)
     public ResponseEntity<ErrorResponse> handleInvalidEmailDomain(InvalidEmailDomainException ex) {
