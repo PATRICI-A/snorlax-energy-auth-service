@@ -5,6 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * REST request body for the login endpoint ({@code POST /api/v1/auth/login}).
+ * Carries the user's institutional email and raw password for authentication.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

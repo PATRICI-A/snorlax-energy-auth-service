@@ -7,6 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * REST request body for the resend-OTP endpoint ({@code POST /api/v1/auth/resend-otp}).
+ * Used when the previous OTP has expired or the maximum attempt count (3) was reached.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -7,6 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * REST request body for the reset-password endpoint ({@code POST /api/v1/auth/reset-password}).
+ * Validates the 6-digit recovery code from forgot-password and sets a new password.
+ * Both {@code newPassword} and {@code confirmPassword} must match.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

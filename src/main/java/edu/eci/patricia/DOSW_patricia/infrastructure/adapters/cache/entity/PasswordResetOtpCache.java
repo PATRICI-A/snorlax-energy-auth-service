@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
+/**
+ * Redis cache entity that stores a password-reset OTP for an email address.
+ * Entries expire automatically after 10 minutes (600 s).
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,8 +18,13 @@ import org.springframework.data.redis.core.RedisHash;
 @RedisHash(value = "password_reset_otp", timeToLive = 600)
 public class PasswordResetOtpCache {
 
+    /** Email address used as the Redis key. */
     @Id
     private String email;
+
+    /** The 6-digit recovery code sent to the user. */
     private String code;
+
+    /** Whether the recovery code has already been consumed. */
     private boolean used;
 }

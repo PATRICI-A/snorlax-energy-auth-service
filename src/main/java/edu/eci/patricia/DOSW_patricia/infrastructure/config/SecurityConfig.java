@@ -16,15 +16,33 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Spring Security configuration for the auth service.
+ * Disables CSRF, HTTP Basic, and form login; enforces stateless sessions; and permits
+ * all {@code /api/v1/auth/**} and Swagger UI endpoints without authentication.
+ * CORS is configured to allow all origins, methods, and headers.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * Provides a BCrypt password encoder for hashing and verifying passwords.
+     *
+     * @return a BCryptPasswordEncoder instance
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configures the main security filter chain.
+     *
+     * @param http the HttpSecurity builder
+     * @return the built SecurityFilterChain
+     * @throws Exception if configuration fails
+     */
     @Bean
     @Order(1)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -49,6 +67,12 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Configures permissive CORS settings used across all endpoints.
+     * Credentials are allowed; the Authorization header is exposed to clients.
+     *
+     * @return the CORS configuration source
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
