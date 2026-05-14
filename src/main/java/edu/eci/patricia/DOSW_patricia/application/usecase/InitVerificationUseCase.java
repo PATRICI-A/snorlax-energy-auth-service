@@ -14,13 +14,15 @@ import java.security.SecureRandom;
 @RequiredArgsConstructor
 public class InitVerificationUseCase implements InitVerificationPort {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final OtpRedisRepository otpRedisRepository;
     private final EmailSenderPort emailSender;
 
     @Override
     public void initVerification(InitVerificationRequestDto dto) {
         String email = dto.getEmail().trim().toLowerCase();
-        String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
         OtpCache otpCache = OtpCache.builder()
                 .email(email)
