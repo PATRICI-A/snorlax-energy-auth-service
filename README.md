@@ -114,61 +114,67 @@ src/main/java/.../
 
 <!-- Insertar diagrama de datos aquí -->
 
+---
 
+## Diagramas de Secuencia
 
-- Diagramas de Secuencia
 Un diagrama de secuencia es un tipo de diagrama UML que muestra, en orden temporal, cómo interactúan los actores y los componentes del sistema mediante mensajes o llamadas.
 
 Es importante porque permite entender el comportamiento dinámico de cada funcionalidad, validar los flujos antes de implementar, detectar errores de lógica y comunicar claramente cómo se procesa cada solicitud de extremo a extremo.
 
+### 1. Inicializar Verificación (Init Verification)
 
-- `RegistroDeUsuario.png`
+Muestra el flujo de inicialización: generación de OTP de 6 dígitos, almacenamiento en cache (Redis) y envío al correo institucional.
 
-  Muestra el flujo de registro: envío de datos, validación de correo, creación del usuario y envío del OTP.
+![INITVerificacion](src/main/resources/INITVerificacion.png)
 
-    ![RegistroDeUsuario](src/main/resources/RegistroDeUsuario.png)
+### 2. Verificar OTP (Verify OTP)
 
-- `ValidacionDeOTP.png`
+Describe la validación del código OTP, la activación de la cuenta en el User Service y la generación de tokens JWT (access + refresh).
 
-  Describe la validación del código OTP, la activación de la cuenta y la generación de tokens.
+![VerifyOTP](src/main/resources/VerifyOTP.png)
 
-    ![ValidacionDeOTP](src/main/resources/ValidacionDeOTP.png)
+### 3. Reenviar OTP (Resend OTP)
 
-- `InicioDeSesion.png`
+Muestra el proceso para generar y reenviar un nuevo OTP cuando el anterior ha expirado o se agotaron los 3 intentos de validación.
 
-  Representa el inicio de sesión con validación de credenciales y emisión de access token y refresh token.
+![ResendOTP](src/main/resources/ResendOTP.png)
 
-    ![InicioDeSesion](src/main/resources/InicioDeSesion.png)
+### 4. Login
 
-- `CerrarSesion.png`
+Representa el inicio de sesión con validación de email y contraseña, verificación del estado de la cuenta, manejo de bloqueos tras intentos fallidos y emisión de tokens.
 
-  Explica el cierre de sesión mediante la revocación del refresh token activo.
+![Login](src/main/resources/Longin.png)
 
-    ![CerrarSesion](src/main/resources/CerrarSesion.png)
+### 5. Refresh Token
 
-- `RenovacionDeToken.png`
+Ilustra la rotación de tokens: validación del refresh token, invalidación del anterior y emisión de un nuevo par (access + refresh).
 
-  Ilustra la renovación de sesión usando un refresh token válido para emitir nuevos tokens.
+![RefreshToken](src/main/resources/RefreshToken.png)
 
-    ![RenovacionDeToken](src/main/resources/RenovacionDeToken.png)
+### 6. Logout
 
-- `ReenviarOTP.png`
+Explica el cierre de sesión mediante la extracción del userId del Bearer token y la eliminación del refresh token activo en Redis.
 
-  Muestra el proceso para generar y reenviar un nuevo OTP cuando el anterior no es usable.
+![Logout](src/main/resources/Logout.png)
 
-    ![ReenviarOTP](src/main/resources/ReenviarOTP.png)
+### 7. Forgot Password
 
-- `RecuperarContraseña.png`
+Describe la solicitud de recuperación de contraseña: búsqueda del usuario, generación del código de recuperación de 6 dígitos y envío al correo.
 
-  Describe la solicitud de recuperación de contraseña y el envío del código de recuperación al correo.
+![ForgotPassword](src/main/resources/ForgotPassword.png)
 
-    ![RecuperarContraseña](src/main/resources/RecuperarContraseña.png)
+### 8. Reset Password
 
-- `ResetearContraseña.png`
+Representa la validación del código de recuperación, la actualización de la contraseña (hasheada con BCrypt) y la eliminación del código usado.
 
-  Representa la validación del código de recuperación y la actualización final de la contraseña.
+![ResetPassword](src/main/resources/ResetPassword.png)
 
-    ![ResetearContraseña](src/main/resources/ResetearContraseña.png)
+### 9. Change Password
+
+Muestra el cambio de contraseña para un usuario autenticado: extracción del userId del Bearer token, validación de la contraseña actual y actualización con la nueva.
+
+![ChangePassword](src/main/resources/ChangePassword.png)
 
 
 ---
