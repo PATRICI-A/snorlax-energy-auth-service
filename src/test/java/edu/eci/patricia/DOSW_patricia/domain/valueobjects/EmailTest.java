@@ -10,13 +10,13 @@ class EmailTest {
     @Test
     void shouldCreateEmailWithValidDomain() {
         Email email = new Email("student@mail.escuelaing.edu.co");
-        assertEquals("student@mail.escuelaing.edu.co", email.getValue());
+        assertEquals("student@mail.escuelaing.edu.co", email.value());
     }
 
     @Test
     void shouldNormalizeToLowercase() {
         Email email = new Email("STUDENT@MAIL.ESCUELAING.EDU.CO");
-        assertEquals("student@mail.escuelaing.edu.co", email.getValue());
+        assertEquals("student@mail.escuelaing.edu.co", email.value());
     }
 
     @Test

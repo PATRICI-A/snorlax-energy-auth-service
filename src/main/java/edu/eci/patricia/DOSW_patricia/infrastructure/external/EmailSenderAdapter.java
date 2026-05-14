@@ -13,13 +13,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class EmailSenderAdapter implements EmailSenderPort {
 
+    private static final String SEPARATOR = "========================================";
+
     private final RabbitTemplate rabbitTemplate;
 
     @Override
     public void sendOtp(String to, String otpCode) {
-        log.info("========================================");
+        log.info(SEPARATOR);
         log.info("[DEV] OTP para {}: {}", to, otpCode);
-        log.info("========================================");
+        log.info(SEPARATOR);
         try {
             rabbitTemplate.convertAndSend(
                     "auth.exchange",
@@ -33,9 +35,9 @@ public class EmailSenderAdapter implements EmailSenderPort {
 
     @Override
     public void sendPasswordReset(String to, String code, java.util.UUID userId) {
-        log.info("========================================");
+        log.info(SEPARATOR);
         log.info("[DEV] Codigo de recuperacion para {}: {}", to, code);
-        log.info("========================================");
+        log.info(SEPARATOR);
         try {
             rabbitTemplate.convertAndSend(
                     "auth.exchange",

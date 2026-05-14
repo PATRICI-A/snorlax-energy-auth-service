@@ -15,6 +15,8 @@ import java.security.SecureRandom;
 @RequiredArgsConstructor
 public class ForgotPasswordUseCase implements ForgotPasswordPort {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final UserServicePort userServicePort;
     private final PasswordResetOtpRedisRepository passwordResetOtpRedisRepository;
     private final EmailSenderPort emailSender;
@@ -26,7 +28,7 @@ public class ForgotPasswordUseCase implements ForgotPasswordPort {
         var user = userServicePort.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new OtpInvalidException("No account found with that email"));
 
-        String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
         PasswordResetOtpCache resetOtp = PasswordResetOtpCache.builder()
                 .email(normalizedEmail)

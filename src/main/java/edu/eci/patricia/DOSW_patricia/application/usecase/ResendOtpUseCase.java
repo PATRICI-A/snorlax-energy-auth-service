@@ -15,6 +15,8 @@ import java.security.SecureRandom;
 @RequiredArgsConstructor
 public class ResendOtpUseCase implements ResendOtpPort {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final OtpRedisRepository otpRedisRepository;
     private final UserServicePort userServicePort;
     private final EmailSenderPort emailSender;
@@ -26,7 +28,7 @@ public class ResendOtpUseCase implements ResendOtpPort {
         userServicePort.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new OtpInvalidException("No account found for this email"));
 
-        String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
         OtpCache otpCache = OtpCache.builder()
                 .email(normalizedEmail)
