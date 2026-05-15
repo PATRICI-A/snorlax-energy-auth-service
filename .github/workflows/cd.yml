@@ -27,7 +27,6 @@ jobs:
           cache: maven
 
       - name: Build JAR (skip tests)
-        working-directory: snorlax-energy-auth-service
         run: mvn package -DskipTests -B
 
       - name: Azure Login
@@ -40,7 +39,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_APP_SERVICE_NAME }}
-          package: snorlax-energy-auth-service/target/auth-service-*.jar
+          package: target/auth-service-*.jar
 
       - name: Show deployed URL
         run: |
