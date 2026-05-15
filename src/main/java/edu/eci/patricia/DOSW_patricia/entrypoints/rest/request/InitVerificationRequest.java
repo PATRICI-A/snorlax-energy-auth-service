@@ -7,6 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * REST request body for the init-verification endpoint ({@code POST /api/v1/auth/init-verification}).
+ * Sent by the registration service after creating the user account to trigger OTP delivery.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

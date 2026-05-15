@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 
+/**
+ * Use case for resending a new OTP to a user whose previous code expired or reached max attempts.
+ */
 @Service
 @RequiredArgsConstructor
 public class ResendOtpUseCase implements ResendOtpPort {
@@ -21,6 +24,12 @@ public class ResendOtpUseCase implements ResendOtpPort {
     private final UserServicePort userServicePort;
     private final EmailSenderPort emailSender;
 
+    /**
+     * Generates and sends a new OTP to the given email address.
+     *
+     * @param email the institutional email of the user
+     * @throws OtpInvalidException if no account is found for the given email
+     */
     @Override
     public void resendOtp(String email) {
         String normalizedEmail = email.trim().toLowerCase();

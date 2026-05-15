@@ -11,6 +11,10 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 
+/**
+ * Use case for initiating the password recovery flow.
+ * Generates a 6-digit recovery code and sends it to the user's email.
+ */
 @Service
 @RequiredArgsConstructor
 public class ForgotPasswordUseCase implements ForgotPasswordPort {
@@ -21,6 +25,12 @@ public class ForgotPasswordUseCase implements ForgotPasswordPort {
     private final PasswordResetOtpRedisRepository passwordResetOtpRedisRepository;
     private final EmailSenderPort emailSender;
 
+    /**
+     * Sends a 6-digit recovery code to the given email address.
+     *
+     * @param email the institutional email of the account to recover
+     * @throws OtpInvalidException if no account is found for the given email
+     */
     @Override
     public void forgotPassword(String email) {
         String normalizedEmail = email.trim().toLowerCase();

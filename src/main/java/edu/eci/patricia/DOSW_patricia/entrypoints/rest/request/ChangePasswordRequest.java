@@ -7,6 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * REST request body for the change-password endpoint ({@code POST /api/v1/auth/change-password}).
+ * The authenticated user's ID is extracted from the Bearer JWT in the Authorization header,
+ * not supplied in this body.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

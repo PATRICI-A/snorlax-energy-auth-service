@@ -20,6 +20,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Use case for validating the OTP sent during registration.
+ * Marks the account as verified and returns JWT tokens on success.
+ * Deletes the OTP after 3 failed attempts.
+ */
 @Service
 @RequiredArgsConstructor
 public class ValidateOtpUseCase implements ValidateOtpPort {
@@ -31,6 +36,15 @@ public class ValidateOtpUseCase implements ValidateOtpPort {
     private final UserServicePort userServicePort;
     private final JwtService jwtService;
 
+    /**
+     * Validates the OTP and activates the user account.
+     *
+     * @param request email and OTP code submitted by the user
+     * @return access token and refresh token on successful validation
+     * @throws OtpExpiredException      if the OTP has expired or does not exist
+     * @throws OtpInvalidException      if the OTP is incorrect or already used
+     * @throws OtpMaxAttemptsException  if 3 failed attempts have been reached
+     */
     @Override
     public LoginResponseDto validateOtp(ValidateOtpRequestDto request) {
         new OtpCode(request.getOtp());
