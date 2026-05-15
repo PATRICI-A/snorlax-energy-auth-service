@@ -9,13 +9,13 @@ class PasswordTest {
     @Test
     void shouldCreatePasswordWithValidLength() {
         Password password = new Password("password123");
-        assertEquals("password123", password.getValue());
+        assertEquals("password123", password.value());
     }
 
     @Test
     void shouldCreatePasswordWithExactMinLength() {
         Password password = new Password("12345678");
-        assertEquals("12345678", password.getValue());
+        assertEquals("12345678", password.value());
     }
 
     @Test

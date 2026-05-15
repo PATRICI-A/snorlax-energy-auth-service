@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Use case for resetting a user's password using a recovery code sent by email.
+ */
 @Service
 @RequiredArgsConstructor
 public class ResetPasswordUseCase implements ResetPasswordPort {
@@ -20,6 +23,13 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
     private final PasswordResetOtpRedisRepository passwordResetOtpRedisRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Validates the recovery code and updates the user's password.
+     *
+     * @param dto contains email, recovery code, and new password
+     * @throws OtpInvalidException   if the recovery code is invalid or already used
+     * @throws OtpExpiredException   if the recovery code has expired
+     */
     @Override
     public void resetPassword(ResetPasswordRequestDto dto) {
         String email = dto.getEmail().trim().toLowerCase();

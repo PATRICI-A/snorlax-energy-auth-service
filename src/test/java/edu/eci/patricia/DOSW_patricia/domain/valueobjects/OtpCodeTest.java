@@ -10,7 +10,7 @@ class OtpCodeTest {
     @Test
     void shouldCreateOtpCodeWithValidSixDigits() {
         OtpCode otp = new OtpCode("123456");
-        assertEquals("123456", otp.getValue());
+        assertEquals("123456", otp.value());
     }
 
     @Test

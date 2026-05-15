@@ -9,7 +9,6 @@ import edu.eci.patricia.DOSW_patricia.domain.exceptions.InvalidCredentialsExcept
 import edu.eci.patricia.DOSW_patricia.domain.model.RefreshToken;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.RefreshTokenRepositoryPort;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
-import edu.eci.patricia.DOSW_patricia.domain.valueobjects.RolEnum;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.LockoutCache;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository.LockoutRedisRepository;
 import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
@@ -50,8 +49,8 @@ class LoginUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        verifiedUser = new UserDto(USER_UUID, EMAIL, HASHED, true, RolEnum.STUDENT);
-        unverifiedUser = new UserDto(USER_UUID, EMAIL, HASHED, false, RolEnum.STUDENT);
+        verifiedUser = new UserDto(USER_UUID, EMAIL, HASHED, true, "STUDENT");
+        unverifiedUser = new UserDto(USER_UUID, EMAIL, HASHED, false, "STUDENT");
         savedToken = new RefreshToken("id", USER_UUID.toString(), EMAIL, "access-token", "refresh-uuid",
                 LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), LocalDateTime.now().plusDays(7));
     }

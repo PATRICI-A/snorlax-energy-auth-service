@@ -123,7 +123,7 @@ class UserTest {
     @Test
     void shouldGetAllFields() {
         assertNotNull(user.getId());
-        assertEquals("student@mail.escuelaing.edu.co", user.getEmail().getValue());
+        assertEquals("student@mail.escuelaing.edu.co", user.getEmail().value());
         assertEquals("hashedPassword", user.getHashedPassword());
         assertEquals("John", user.getName());
         assertEquals("Doe", user.getLastName());

@@ -11,14 +11,25 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 
+/**
+ * Use case for resending a new OTP to a user whose previous code expired or reached max attempts.
+ */
 @Service
 @RequiredArgsConstructor
 public class ResendOtpUseCase implements ResendOtpPort {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final OtpRedisRepository otpRedisRepository;
     private final UserServicePort userServicePort;
     private final EmailSenderPort emailSender;
 
+    /**
+     * Generates and sends a new OTP to the given email address.
+     *
+     * @param email the institutional email of the user
+     * @throws OtpInvalidException if no account is found for the given email
+     */
     @Override
     public void resendOtp(String email) {
         String normalizedEmail = email.trim().toLowerCase();
@@ -26,7 +37,7 @@ public class ResendOtpUseCase implements ResendOtpPort {
         userServicePort.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new OtpInvalidException("No account found for this email"));
 
-        String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
         OtpCache otpCache = OtpCache.builder()
                 .email(normalizedEmail)

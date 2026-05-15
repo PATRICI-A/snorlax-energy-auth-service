@@ -11,15 +11,42 @@ import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ValidateOtpReques
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+/**
+ * MapStruct mapper for converting REST request objects into application-layer DTOs.
+ */
 @Mapper(componentModel = "spring")
 public interface AuthRestMapper {
 
+    /**
+     * Converts an init-verification REST request to its application DTO.
+     *
+     * @param request the REST request
+     * @return the application DTO
+     */
     InitVerificationRequestDto toInitVerificationDto(InitVerificationRequest request);
 
+    /**
+     * Converts a validate-OTP REST request to its application DTO.
+     *
+     * @param request the REST request
+     * @return the application DTO
+     */
     ValidateOtpRequestDto toValidateOtpDto(ValidateOtpRequest request);
 
+    /**
+     * Converts a login REST request to its application DTO.
+     *
+     * @param request the REST request
+     * @return the application DTO
+     */
     LoginRequestDto toLoginDto(LoginRequest request);
 
+    /**
+     * Converts a reset-password REST request to its application DTO.
+     *
+     * @param request the REST request
+     * @return the application DTO
+     */
     @Mapping(target = "code", source = "code")
     @Mapping(target = "newPassword", source = "newPassword")
     ResetPasswordRequestDto toResetPasswordDto(ResetPasswordRequest request);

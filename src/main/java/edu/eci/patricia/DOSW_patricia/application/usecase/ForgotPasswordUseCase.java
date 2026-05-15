@@ -11,14 +11,26 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 
+/**
+ * Use case for initiating the password recovery flow.
+ * Generates a 6-digit recovery code and sends it to the user's email.
+ */
 @Service
 @RequiredArgsConstructor
 public class ForgotPasswordUseCase implements ForgotPasswordPort {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserServicePort userServicePort;
     private final PasswordResetOtpRedisRepository passwordResetOtpRedisRepository;
     private final EmailSenderPort emailSender;
 
+    /**
+     * Sends a 6-digit recovery code to the given email address.
+     *
+     * @param email the institutional email of the account to recover
+     * @throws OtpInvalidException if no account is found for the given email
+     */
     @Override
     public void forgotPassword(String email) {
         String normalizedEmail = email.trim().toLowerCase();
@@ -26,7 +38,7 @@ public class ForgotPasswordUseCase implements ForgotPasswordPort {
         var user = userServicePort.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new OtpInvalidException("No account found with that email"));
 
-        String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
         PasswordResetOtpCache resetOtp = PasswordResetOtpCache.builder()
                 .email(normalizedEmail)

@@ -5,7 +5,6 @@ import edu.eci.patricia.DOSW_patricia.application.dto.request.ResetPasswordReque
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
-import edu.eci.patricia.DOSW_patricia.domain.valueobjects.RolEnum;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.PasswordResetOtpCache;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository.PasswordResetOtpRedisRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +39,7 @@ class ResetPasswordUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        user = new UserDto(USER_UUID, EMAIL, "hashed", true, RolEnum.STUDENT);
+        user = new UserDto(USER_UUID, EMAIL, "hashed", true, "STUDENT");
         validCache = PasswordResetOtpCache.builder().email(EMAIL).code(CODE).used(false).build();
     }
 
