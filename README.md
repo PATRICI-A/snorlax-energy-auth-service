@@ -343,16 +343,29 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/init-verification`
 
-#### Request Body
+#### Request
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `email` | `String` | Sí | Email institucional del usuario recién registrado |
-| `hashedPassword` | `String` | Sí | Contraseña ya hasheada con BCrypt (viene del Registration Service) |
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `email` | `String` | body | Sí | Email institucional del usuario recién registrado |
+| `hashedPassword` | `String` | body | Sí | Contraseña ya hasheada con BCrypt (viene del Registration Service) |
 
-#### Response exitoso — `201 Created`
+#### Ejemplo
+
+```
+POST /api/v1/auth/init-verification
+```
 
 ```json
+// Request body
+{
+  "email": "usuario@escuelaing.edu.co",
+  "hashedPassword": "$2a$10$eXaMpLeHaSh..."
+}
+```
+
+```json
+// Response
 { "message": "OTP sent to email" }
 ```
 
@@ -368,18 +381,29 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/verify-otp`
 
-#### Request Body
+#### Request
+
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `email` | `String` | body | Sí | Email institucional del usuario |
+| `otp` | `String` | body | Sí | Código OTP de 6 dígitos recibido por correo |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/verify-otp
+```
 
 ```json
+// Request body
 {
   "email": "usuario@escuelaing.edu.co",
   "otp": "123456"
 }
 ```
 
-#### Response exitoso — `200 OK`
-
 ```json
+// Response
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
@@ -400,15 +424,25 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/resend-otp`
 
-#### Request Body
+#### Request
+
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `email` | `String` | body | Sí | Email institucional del usuario cuyo OTP expiró o se agotaron sus intentos |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/resend-otp
+```
 
 ```json
+// Request body
 { "email": "usuario@escuelaing.edu.co" }
 ```
 
-#### Response exitoso — `200 OK`
-
 ```json
+// Response
 { "message": "New OTP sent to email" }
 ```
 
@@ -424,18 +458,29 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/login`
 
-#### Request Body
+#### Request
+
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `email` | `String` | body | Sí | Email institucional del usuario |
+| `password` | `String` | body | Sí | Contraseña en texto plano (se compara con hash BCrypt en User Service) |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/login
+```
 
 ```json
+// Request body
 {
   "email": "usuario@escuelaing.edu.co",
   "password": "MiContraseña123!"
 }
 ```
 
-#### Response exitoso — `200 OK`
-
 ```json
+// Response
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
@@ -457,15 +502,25 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/refresh`
 
-#### Request Body
+#### Request
+
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `refreshToken` | `String` | body | Sí | UUID del refresh token activo obtenido en login o verify-otp |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/refresh
+```
 
 ```json
+// Request body
 { "refreshToken": "550e8400-e29b-41d4-a716-446655440000" }
 ```
 
-#### Response exitoso — `200 OK`
-
 ```json
+// Response
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...(nuevo)...",
   "refreshToken": "661f9511-f3ac-52e5-b827-557766551111",
@@ -485,11 +540,21 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/logout`
 
-**Header requerido:** `Authorization: Bearer <accessToken>`
+#### Request
 
-#### Response exitoso — `200 OK`
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `Authorization` | `String` | header | Sí | Token JWT en formato `Bearer <accessToken>` |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/logout
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
 
 ```json
+// Response
 { "message": "Session closed successfully" }
 ```
 
@@ -505,15 +570,25 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/forgot-password`
 
-#### Request Body
+#### Request
+
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `email` | `String` | body | Sí | Email institucional de la cuenta a recuperar |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/forgot-password
+```
 
 ```json
+// Request body
 { "email": "usuario@escuelaing.edu.co" }
 ```
 
-#### Response exitoso — `200 OK`
-
 ```json
+// Response
 { "message": "Recovery code sent to email" }
 ```
 
@@ -529,9 +604,22 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/reset-password`
 
-#### Request Body
+#### Request
+
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `email` | `String` | body | Sí | Email institucional de la cuenta |
+| `otp` | `String` | body | Sí | Código de recuperación de 6 dígitos recibido por correo |
+| `newPassword` | `String` | body | Sí | Nueva contraseña (se hasheará con BCrypt antes de guardar) |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/reset-password
+```
 
 ```json
+// Request body
 {
   "email": "usuario@escuelaing.edu.co",
   "otp": "654321",
@@ -539,9 +627,8 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 }
 ```
 
-#### Response exitoso — `200 OK`
-
 ```json
+// Response
 { "message": "Password updated successfully" }
 ```
 
@@ -557,20 +644,31 @@ Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
 
 **Endpoint:** `POST /api/v1/auth/change-password`
 
-**Header requerido:** `Authorization: Bearer <accessToken>`
+#### Request
 
-#### Request Body
+| Campo | Tipo | Origen | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `Authorization` | `String` | header | Sí | Token JWT en formato `Bearer <accessToken>` |
+| `currentPassword` | `String` | body | Sí | Contraseña actual del usuario para verificación |
+| `newPassword` | `String` | body | Sí | Nueva contraseña a establecer |
+
+#### Ejemplo
+
+```
+POST /api/v1/auth/change-password
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
 
 ```json
+// Request body
 {
   "currentPassword": "ContraActual123!",
   "newPassword": "ContraNueva456!"
 }
 ```
 
-#### Response exitoso — `200 OK`
-
 ```json
+// Response
 { "message": "Password changed successfully" }
 ```
 
@@ -692,15 +790,16 @@ src/test/java/edu/eci/patricia/DOSW_patricia/
 ### Captura — Reporte JaCoCo
 
 <div align="center">
-<img src="src/main/resources/jacoco.png" alt="Reporte de cobertura JaCoCo" width="700"/>
+<img src="src/main/resources/pruebas_auth.png" alt="Reporte de cobertura JaCoCo" width="700"/>
 </div>
 
 ### Métricas objetivo
 
-| Métrica | Objetivo | Configuración |
+| Métrica | Objetivo | Obtenido |
 |---|---|---|
-| Cobertura de instrucciones | ≥ 80% | Regla `INSTRUCTION / COVEREDRATIO ≥ 0.80` en `pom.xml` — `mvn verify` falla si no se alcanza |
-| Clases excluidas | Config, DTOs, Enums, Adapters de cache | Configurado en `<excludes>` del plugin JaCoCo |
+| Cobertura de instrucciones | ≥ 80% | 97% |
+| Cobertura de ramas | ≥ 60% | 93% |
+| Clases cubiertas | — | 29 de 29 |
 
 ---
 
@@ -794,12 +893,10 @@ docker compose down -v
 
 | Ambiente | URL |
 |---|---|
-| **Producción (Azure)** | `https://<AZURE_APP_SERVICE_NAME>.azurewebsites.net/swagger-ui.html` |
+| **Producción (Azure)** | `https://patricia-etfgcpfsb5g2aqby.canadacentral-01.azurewebsites.net/swagger-ui/index.html` |
 | **Local** | `http://localhost:8080/swagger-ui.html` |
 | **Docker Compose** | `http://localhost:9090/swagger-ui.html` |
-| **OpenAPI JSON** | `<URL_BASE>/v3/api-docs` |
-
-> Reemplazar `<AZURE_APP_SERVICE_NAME>` con el nombre real del App Service configurado en el secret `AZURE_APP_SERVICE_NAME` de GitHub Actions (ver `DEPLOYMENT_AZURE.md`).
+| **OpenAPI JSON** | `https://patricia-etfgcpfsb5g2aqby.canadacentral-01.azurewebsites.net/v3/api-docs` |
 
 ---
 
