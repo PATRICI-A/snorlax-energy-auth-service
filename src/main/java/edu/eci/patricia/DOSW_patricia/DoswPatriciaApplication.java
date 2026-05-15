@@ -9,6 +9,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
+/**
+ * Entry point for the PATRICIA Authentication Service.
+ * Bootstraps the Spring Boot application, enables OpenFeign clients, and registers
+ * the global OpenAPI/Swagger definition with Bearer JWT security scheme.
+ */
 @OpenAPIDefinition(info = @Info(title = "PATRICIA Auth Service", version = "v1"))
 @SecurityScheme(
         name = "bearerAuth",
@@ -21,7 +26,11 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 public class DoswPatriciaApplication {
 
-
+    /**
+     * Application entry point.
+     *
+     * @param args command-line arguments passed to Spring Boot
+     */
     public static void main(String[] args) {
         SpringApplication.run(DoswPatriciaApplication.class, args);
     }

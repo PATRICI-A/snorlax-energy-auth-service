@@ -18,6 +18,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * REST request body for the registration endpoint.
+ * Aggregates all profile fields required to create a new institutional account.
+ * The raw password is hashed before leaving this service; it is never stored in plain text.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

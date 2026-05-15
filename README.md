@@ -150,90 +150,67 @@ Infrastructure (Redis / Feign / RabbitMQ adapters) ──┘
 
 ### Flujo General — Login
 
-1. El cliente envía `POST /api/v1/auth/login` con `{email, password}`.
-2. `AuthController` valida el request con `@Valid` y delega a `LoginPort`.
-3. `LoginUseCase` consulta al User Service por email via `UserServiceFeignAdapter` → Feign → HTTP.
-4. Se verifica si la cuenta está bloqueada consultando `LockoutCache` en Redis.
-5. Se compara la contraseña con BCrypt. Si falla, incrementa intentos en `LockoutCache` (bloqueo al 5° intento, TTL ~30 min).
-6. `JwtService` genera un access token JWT (HMAC-SHA256, 15 min).
-7. Se crea un `RefreshToken` con UUID aleatorio y TTL de 7 días, guardado en `RefreshTokenCache` (Redis).
-8. Se retorna `{accessToken, refreshToken, tokenType: "Bearer"}`.
+---
 
-### Flujo General — Registro con OTP
+## Diagramas de Secuencia
 
-1. El Registration Service llama `POST /api/v1/auth/init-verification` con `{email, hashedPassword}`.
-2. `InitVerificationUseCase` genera OTP de 6 dígitos con `SecureRandom`.
-3. El OTP se guarda en `OtpCache` (Redis, TTL = 600 s = 10 min).
-4. `EmailSenderAdapter` publica `OtpVerificationEventDto` en `auth.exchange` con routing key `auth.otp.verification`.
-5. El usuario llama `POST /api/v1/auth/verify-otp` con el código.
-6. `ValidateOtpUseCase` valida intentos (máx. 3), marca como usado y llama al User Service para activar la cuenta.
-7. Se generan tokens JWT y se retorna la sesión activa.
+Un diagrama de secuencia es un tipo de diagrama UML que muestra, en orden temporal, cómo interactúan los actores y los componentes del sistema mediante mensajes o llamadas.
 
 ### Diagramas de Secuencia
 
-#### Registro y Verificación OTP
+### 1. Inicializar Verificación (Init Verification)
 
-![RegistroDeUsuario](src/main/resources/RegistroDeUsuario.png)
+Muestra el flujo de inicialización: generación de OTP de 6 dígitos, almacenamiento en cache (Redis) y envío al correo institucional.
 
-![ValidacionDeOTP](src/main/resources/ValidacionDeOTP.png)
+![INITVerificacion](src/main/resources/INITVerificacion.png)
 
-#### Inicio de Sesión
+### 2. Verificar OTP (Verify OTP)
 
-![InicioDeSesion](src/main/resources/InicioDeSesion.png)
+Describe la validación del código OTP, la activación de la cuenta en el User Service y la generación de tokens JWT (access + refresh).
 
-#### Gestión de Sesión
+![VerifyOTP](src/main/resources/VerifyOTP.png)
 
-![RenovacionDeToken](src/main/resources/RenovacionDeToken.png)
+### 3. Reenviar OTP (Resend OTP)
 
-![CerrarSesion](src/main/resources/CerrarSesion.png)
+Muestra el proceso para generar y reenviar un nuevo OTP cuando el anterior ha expirado o se agotaron los 3 intentos de validación.
 
-![ReenviarOTP](src/main/resources/ReenviarOTP.png)
+![ResendOTP](src/main/resources/ResendOTP.png)
 
-#### Recuperación de Contraseña
+### 4. Login
 
-![RecuperarContraseña](src/main/resources/RecuperarContraseña.png)
+Representa el inicio de sesión con validación de email y contraseña, verificación del estado de la cuenta, manejo de bloqueos tras intentos fallidos y emisión de tokens.
 
-![ResetearContraseña](src/main/resources/ResetearContraseña.png)
+![Login](src/main/resources/Longin.png)
 
-> ⚠️ Los diagramas de secuencia están en `src/main/resources/`. Reemplazar con las imágenes reales si aún no han sido generadas.
+### 5. Refresh Token
 
----
+Ilustra la rotación de tokens: validación del refresh token, invalidación del anterior y emisión de un nuevo par (access + refresh).
 
-## 5. Diagrama de Datos
+![RefreshToken](src/main/resources/RefreshToken.png)
 
-<div align="center">
-<img src="src/main/resources/componetes generales.png" alt="Diagrama de componentes generales" width="700"/>
-</div>
+### 6. Logout
 
-### Estructuras de Caché (Redis) — Este módulo no tiene base de datos relacional propia
+Explica el cierre de sesión mediante la extracción del userId del Bearer token y la eliminación del refresh token activo en Redis.
 
-Toda la persistencia se realiza en Redis mediante entidades `@RedisHash`:
+![Logout](src/main/resources/Logout.png)
 
-#### Cache: `otp` — TTL 600 s (10 min)
+### 7. Forgot Password
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `email` (ID) | `String` | Email institucional — clave del hash |
-| `code` | `String` | Código OTP de 6 dígitos generado con `SecureRandom` |
-| `used` | `boolean` | Si el OTP ya fue consumido |
-| `attempts` | `int` | Intentos fallidos acumulados (máx. 3 antes de eliminar) |
+Describe la solicitud de recuperación de contraseña: búsqueda del usuario, generación del código de recuperación de 6 dígitos y envío al correo.
 
-#### Cache: `password_reset_otp` — TTL 600 s (10 min)
+![ForgotPassword](src/main/resources/ForgotPassword.png)
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `email` (ID) | `String` | Email institucional — clave del hash |
-| `code` | `String` | Código de recuperación de 6 dígitos |
-| `used` | `boolean` | Si el código ya fue consumido (uso único) |
+### 8. Reset Password
 
-#### Cache: `lockout`
+Representa la validación del código de recuperación, la actualización de la contraseña (hasheada con BCrypt) y la eliminación del código usado.
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `email` (ID) | `String` | Email — clave del hash |
-| `failedAttempts` | `int` | Intentos fallidos acumulados (bloqueo al 5°) |
+![ResetPassword](src/main/resources/ResetPassword.png)
 
-#### Cache: `refresh_token` — TTL 7 días
+### 9. Change Password
+
+Muestra el cambio de contraseña para un usuario autenticado: extracción del userId del Bearer token, validación de la contraseña actual y actualización con la nueva.
+
+![ChangePassword](src/main/resources/ChangePassword.png)
 
 | Campo | Tipo | Descripción |
 |---|---|---|

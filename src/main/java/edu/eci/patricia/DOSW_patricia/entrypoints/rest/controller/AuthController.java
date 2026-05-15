@@ -38,6 +38,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
+/**
+ * REST controller exposing all authentication endpoints under {@code /api/v1/auth}.
+ * Delegates every operation to the corresponding use-case port and maps REST requests
+ * to application-layer DTOs via {@link AuthRestMapper}.
+ */
 @Tag(name = "Authentication", description = "OTP verification, login, token management and password operations")
 @RestController
 @RequestMapping("/api/v1/auth")

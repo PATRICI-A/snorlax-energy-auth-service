@@ -10,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Use case for changing the password of an authenticated user.
+ * Verifies the current password before applying the new one.
+ */
 @Service
 @RequiredArgsConstructor
 public class ChangePasswordUseCase implements ChangePasswordPort {
@@ -17,6 +21,13 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
     private final UserServicePort userServicePort;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Changes the user's password after verifying the current one.
+     *
+     * @param dto contains userId, current password, and new password
+     * @throws TokenInvalidException       if the user is not found
+     * @throws InvalidCredentialsException if the current password is incorrect
+     */
     @Override
     public void changePassword(ChangePasswordRequestDto dto) {
         UserDto user = userServicePort.findById(dto.getUserId())

@@ -20,6 +20,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Use case for authenticating a user with email and password.
+ * Handles failed attempt tracking and account lockout after 5 consecutive failures.
+ */
 @Service
 @RequiredArgsConstructor
 public class LoginUseCase implements LoginPort {
@@ -32,6 +36,15 @@ public class LoginUseCase implements LoginPort {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Authenticates the user and returns a JWT access token and refresh token.
+     *
+     * @param dto login credentials (email and password)
+     * @return access token and refresh token
+     * @throws CuentaBloqueadaException     if the account is temporarily locked
+     * @throws InvalidCredentialsException  if the password is incorrect
+     * @throws EmailNotVerifiedException    if the account has not been verified via OTP
+     */
     @Override
     public LoginResponseDto login(LoginRequestDto dto) {
         String email = dto.getEmail().trim().toLowerCase();

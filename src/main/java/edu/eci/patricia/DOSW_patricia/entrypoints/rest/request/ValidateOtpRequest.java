@@ -6,6 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * REST request body for the OTP-validation endpoint ({@code POST /api/v1/auth/verify-otp}).
+ * Carries the institutional email and the 6-digit OTP delivered during registration.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

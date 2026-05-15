@@ -12,6 +12,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Core domain model representing a registered user.
+ * Encapsulates authentication state (verified, lockout) and profile data.
+ * This class is never persisted directly — the auth service reads user state
+ * from the external profile service via {@link edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort}.
+ */
 public class User {
 
     private UUID id;
@@ -57,14 +63,22 @@ public class User {
         this.otp = otp;
     }
 
+    /** Marks this user's email as verified so they can log in. */
     public void verify() { this.verified = true; }
 
+    /** Increments the consecutive failed-login counter by one. */
     public void incrementFailedAttempts() {
         this.failedAttempts = (this.failedAttempts == null ? 0 : this.failedAttempts) + 1;
     }
 
+    /**
+     * Locks the account until the specified timestamp.
+     *
+     * @param until the date/time after which the account becomes accessible again
+     */
     public void lockAccount(LocalDateTime until) { this.blockedUntil = until; }
 
+    /** Resets the failed-attempt counter and removes the lock. */
     public void resetLockout() {
         this.failedAttempts = 0;
         this.blockedUntil = null;

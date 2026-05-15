@@ -6,6 +6,9 @@ import edu.eci.patricia.DOSW_patricia.infrastructure.external.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * Use case for logging out a user by invalidating their active session.
+ */
 @Service
 @RequiredArgsConstructor
 public class LogoutUseCase implements LogoutPort {
@@ -13,6 +16,11 @@ public class LogoutUseCase implements LogoutPort {
     private final RefreshTokenRepositoryPort refreshTokenRepository;
     private final JwtService jwtService;
 
+    /**
+     * Invalidates the session associated with the given JWT access token.
+     *
+     * @param token the JWT access token from the Authorization header
+     */
     @Override
     public void logout(String token) {
         String userId = jwtService.extractUserId(token);
