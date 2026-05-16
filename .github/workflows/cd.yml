@@ -1,4 +1,4 @@
-name: CD – Deploy to Azure
+name: CD – Build Docker & Deploy to Azure Container Apps
 
 on:
   workflow_run:
@@ -8,16 +8,34 @@ on:
 
 env:
   JAVA_VERSION: '21'
+  ACR_LOGIN_SERVER: acrpatricia.azurecr.io
+  ACR_NAME: acrpatricia
+  IMAGE_NAME: ms-auth
+  CONTAINER_APP_NAME: ca-patricia-auth
+  RESOURCE_GROUP: patricia-prod
 
 jobs:
-  deploy-to-azure:
-    name: "CD – Deploy to Azure App Service"
+  build-push-deploy:
+    name: "CD – Docker Build → ACR Push → Container Apps Deploy"
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine image version
+        id: version
+        run: |
+          GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+          if [ -n "$GIT_TAG" ]; then
+            echo "IMAGE_TAG=$GIT_TAG" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)
+            echo "IMAGE_TAG=sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up JDK 21 with Maven cache
         uses: actions/setup-java@v4
@@ -26,7 +44,7 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Build JAR (skip tests)
+      - name: Build JAR (skip tests – already run by CI)
         run: mvn package -DskipTests -B
 
       - name: Azure Login
@@ -35,14 +53,43 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           auth-type: SERVICE_PRINCIPAL
 
-      - name: Deploy JAR to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_APP_SERVICE_NAME }}
-          package: target/auth-service-*.jar
+      - name: Login to Azure Container Registry
+        run: az acr login --name ${{ env.ACR_NAME }}
 
-      - name: Show deployed URL
+      - name: Build Docker image
         run: |
+          IMAGE_TAG="${{ steps.version.outputs.IMAGE_TAG }}"
+          docker build \
+            --tag "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}" \
+            --tag "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest" \
+            --label "git.sha=${{ github.event.workflow_run.head_sha }}" \
+            --label "build.number=${{ github.run_number }}" \
+            .
+
+      - name: Push Docker image to ACR
+        run: |
+          IMAGE_TAG="${{ steps.version.outputs.IMAGE_TAG }}"
+          docker push "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          docker push "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest"
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          IMAGE_TAG="${{ steps.version.outputs.IMAGE_TAG }}"
+          az containerapp update \
+            --name "${{ env.CONTAINER_APP_NAME }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+
+      - name: Show deployed URLs
+        run: |
+          IMAGE_TAG="${{ steps.version.outputs.IMAGE_TAG }}"
+          FQDN=$(az containerapp show \
+            --name "${{ env.CONTAINER_APP_NAME }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            --output tsv)
           echo "Deploy exitoso"
-          echo "  API:     https://${{ secrets.AZURE_APP_SERVICE_NAME }}.azurewebsites.net/api/v1/auth"
-          echo "  Swagger: https://${{ secrets.AZURE_APP_SERVICE_NAME }}.azurewebsites.net"
+          echo "  Versión:  ${IMAGE_TAG}"
+          echo "  API:      https://${FQDN}/api/v1/auth"
+          echo "  Swagger:  https://${FQDN}/swagger-ui.html"
+          echo "  Health:   https://${FQDN}/actuator/health"
