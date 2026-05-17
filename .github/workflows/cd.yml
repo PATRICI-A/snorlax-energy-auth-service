@@ -1,4 +1,4 @@
-giname: CD – Azure Container Apps Deploy
+name: CD – Azure Container Apps Deploy
 
 on:
   workflow_run:
