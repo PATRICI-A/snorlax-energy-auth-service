@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,14 +21,18 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
+    @Value("${rabbitmq.exchange.auth}")
+    private String authExchangeName;
+
     /**
      * Declares the durable, non-auto-delete topic exchange used by all auth events.
+     * The exchange name is resolved from {@code rabbitmq.exchange.auth} in application properties.
      *
-     * @return the {@code auth.exchange} topic exchange
+     * @return the auth topic exchange
      */
     @Bean
     public TopicExchange authExchange() {
-        return new TopicExchange("auth.exchange", true, false);
+        return new TopicExchange(authExchangeName, true, false);
     }
 
     /**

@@ -34,7 +34,7 @@ public class ResendOtpUseCase implements ResendOtpPort {
     public void resendOtp(String email) {
         String normalizedEmail = email.trim().toLowerCase();
 
-        userServicePort.findByEmail(normalizedEmail)
+        var user = userServicePort.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new OtpInvalidException("No account found for this email"));
 
         String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
@@ -47,6 +47,6 @@ public class ResendOtpUseCase implements ResendOtpPort {
                 .build();
 
         otpRedisRepository.save(otpCache);
-        emailSender.sendOtp(normalizedEmail, code);
+        emailSender.sendOtpResend(normalizedEmail, code, user.id());
     }
 }

@@ -39,7 +39,7 @@ class ResendOtpUseCaseTest {
         useCase.resendOtp(EMAIL);
 
         verify(otpRedisRepository).save(any(OtpCache.class));
-        verify(emailSender).sendOtp(eq(EMAIL), anyString());
+        verify(emailSender).sendOtpResend(eq(EMAIL), anyString(), any());
     }
 
     @Test
