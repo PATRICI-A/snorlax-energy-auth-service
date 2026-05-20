@@ -48,7 +48,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:qa-latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:qa-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:qa-${{ github.sha }}
 
   deploy-qa:
     name: "Deploy to QA"
@@ -67,7 +69,7 @@ jobs:
           az containerapp update \
             --name patricia-auth-service-qa \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:qa-latest
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:qa-${{ github.sha }}
 
       - name: Health check QA
         run: |
