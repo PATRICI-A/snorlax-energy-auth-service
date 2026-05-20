@@ -28,7 +28,7 @@ public class UserServiceRestAdapter implements UserServicePort {
     public Optional<UserDto> findByEmail(String email) {
         try {
             UserDto user = restClient.get()
-                    .uri(userServiceUrl + "/api/v1/internal/users/email/{email}", email)
+                    .uri(userServiceUrl + "/api/v1/internal/users/mail/{email}", email)
                     .retrieve()
                     .body(UserDto.class);
             return Optional.ofNullable(user);
@@ -57,10 +57,14 @@ public class UserServiceRestAdapter implements UserServicePort {
     @Override
     public void markUserAsVerified(String email) {
         try {
+            UserDto user = findByEmail(email)
+                    .orElseThrow(() -> new UserServiceNotAvailableException("User not found for email: " + email));
             restClient.patch()
-                    .uri(userServiceUrl + "/api/v1/internal/users/email/{email}/verify", email)
+                    .uri(userServiceUrl + "/api/v1/internal/users/{userId}/verify", user.id())
                     .retrieve()
                     .toBodilessEntity();
+        } catch (UserServiceNotAvailableException e) {
+            throw e;
         } catch (ResourceAccessException | HttpServerErrorException | HttpClientErrorException e) {
             throw new UserServiceNotAvailableException("User service is unavailable: " + e.getMessage());
         }
@@ -69,12 +73,16 @@ public class UserServiceRestAdapter implements UserServicePort {
     @Override
     public void updatePassword(String email, String newHashedPassword) {
         try {
+            UserDto user = findByEmail(email)
+                    .orElseThrow(() -> new UserServiceNotAvailableException("User not found for email: " + email));
             restClient.patch()
-                    .uri(userServiceUrl + "/api/v1/internal/users/email/{email}/password", email)
+                    .uri(userServiceUrl + "/api/v1/internal/users/{userId}/password-hash", user.id())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("hashedPassword", newHashedPassword))
+                    .body(Map.of("passwordHash", newHashedPassword))
                     .retrieve()
                     .toBodilessEntity();
+        } catch (UserServiceNotAvailableException e) {
+            throw e;
         } catch (ResourceAccessException | HttpServerErrorException | HttpClientErrorException e) {
             throw new UserServiceNotAvailableException("User service is unavailable: " + e.getMessage());
         }
