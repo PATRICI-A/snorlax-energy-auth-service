@@ -9,7 +9,6 @@ import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.PasswordResetOtpCache;
 import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository.PasswordResetOtpRedisRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -21,7 +20,6 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
 
     private final UserServicePort userServicePort;
     private final PasswordResetOtpRedisRepository passwordResetOtpRedisRepository;
-    private final PasswordEncoder passwordEncoder;
 
     /**
      * Validates the recovery code and updates the user's password.
@@ -47,7 +45,6 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
         resetOtp.setUsed(true);
         passwordResetOtpRedisRepository.save(resetOtp);
 
-        String newHashedPassword = passwordEncoder.encode(dto.getNewPassword());
-        userServicePort.updatePassword(user.id().toString(), newHashedPassword);
+        userServicePort.updatePassword(user.id().toString(), dto.getNewPassword());
     }
 }
