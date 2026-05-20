@@ -12,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OtpResendEventDto {
+
     private UUID userId;
     private String email;
     private String otpCode;
