@@ -16,8 +16,4 @@ public class InitVerificationRequest {
     @Email(message = "Must be a valid email address")
     @Schema(example = "juan.perez@mail.escuelaing.edu.co")
     private String email;
-
-    @NotBlank(message = "Hashed password is required")
-    @Schema(example = "$2a$10$...", description = "BCrypt-hashed password from the registration service")
-    private String hashedPassword;
 }
