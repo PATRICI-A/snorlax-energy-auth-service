@@ -10,5 +10,4 @@ import lombok.NoArgsConstructor;
 public class InitVerificationRequestDto {
 
     private String email;
-    private String hashedPassword;
 }
