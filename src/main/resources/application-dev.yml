@@ -10,20 +10,11 @@ spring:
         enabled: ${REDIS_SSL:false}
   rabbitmq:
     host: ${RABBITMQ_HOST:woodpecker.rmq.cloudamqp.com}
-    port: ${RABBITMQ_PORT:5671}
     username: ${RABBITMQ_USERNAME:thjdybjd}
     password: ${RABBITMQ_PASSWORD:eHWjGdLhNYN73Ct96wUAV1KkpwnDiKZj}
     virtual-host: ${RABBITMQ_VIRTUAL_HOST:thjdybjd}
     ssl:
       enabled: ${RABBITMQ_SSL:true}
-
-rabbitmq:
-  exchange:
-    auth: auth.exchange
-  routing-key:
-    otp-verification: auth.otp.verification
-    otp-resend: auth.otp.resend
-    password-reset: auth.password.reset
 
 jwt:
   secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-32-characters}

@@ -8,6 +8,22 @@ spring:
       httpclient:
         hc5:
           enabled: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5671}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
+    ssl:
+      enabled: ${RABBITMQ_SSL:false}
+
+rabbitmq:
+  exchange:
+    auth: auth.exchange
+  routing-key:
+    otp-verification: auth.otp.verification
+    otp-resend: auth.otp.resend
+    password-reset: auth.password.reset
 
 server:
   forward-headers-strategy: framework
