@@ -41,6 +41,6 @@ public class InitVerificationUseCase implements InitVerificationPort {
                 .build();
 
         otpRedisRepository.save(otpCache);
-        emailSender.sendOtp(email, code);
+        emailSender.sendOtp(email, code, null);
     }
 }
