@@ -10,7 +10,6 @@ spring:
         enabled: ${REDIS_SSL:false}
   rabbitmq:
     host: ${RABBITMQ_HOST:woodpecker.rmq.cloudamqp.com}
-    port: ${RABBITMQ_PORT:5671}
     username: ${RABBITMQ_USERNAME:thjdybjd}
     password: ${RABBITMQ_PASSWORD:eHWjGdLhNYN73Ct96wUAV1KkpwnDiKZj}
     virtual-host: ${RABBITMQ_VIRTUAL_HOST:thjdybjd}

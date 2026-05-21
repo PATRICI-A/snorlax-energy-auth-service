@@ -16,6 +16,15 @@ public interface EmailSenderPort {
     void sendOtp(String to, String otpCode);
 
     /**
+     * Sends an OTP resend code to an existing user's email address.
+     *
+     * @param to      recipient email address
+     * @param otpCode new 6-digit OTP code
+     * @param userId  the verified UUID of the account owner
+     */
+    void sendOtpResend(String to, String otpCode, UUID userId);
+
+    /**
      * Sends a password recovery code to the given email address.
      *
      * @param to     recipient email address

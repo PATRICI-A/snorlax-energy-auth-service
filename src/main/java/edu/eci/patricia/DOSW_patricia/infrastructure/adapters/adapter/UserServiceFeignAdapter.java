@@ -51,13 +51,13 @@ public class UserServiceFeignAdapter implements UserServicePort {
     }
 
     /**
-     * Updates the user's hashed password in the profile service.
+     * Sends the new plain-text password to the profile service, which handles hashing.
      *
-     * @param userId            the user's ID
-     * @param newHashedPassword the new BCrypt-hashed password
+     * @param userId      the user's ID
+     * @param newPassword the new plain-text password
      */
     @Override
-    public void updatePassword(String userId, String newHashedPassword) {
-        feignClient.updatePassword(userId, Map.of("hashedPassword", newHashedPassword));
+    public void updatePassword(String userId, String newPassword) {
+        feignClient.updatePassword(userId, Map.of("newPassword", newPassword));
     }
 }

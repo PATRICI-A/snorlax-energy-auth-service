@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * Event payload published to RabbitMQ when a password-reset code is generated.
  * The email notification service consumes this from the {@code auth.password.reset} routing key.
@@ -17,5 +19,5 @@ public class PasswordResetEventDto {
     /** The 6-digit recovery code to be delivered to the user. */
     private String resetCode;
     /** The user's UUID, included so the notification service can personalise the email. */
-    private String userId;
+    private UUID userId;
 }
