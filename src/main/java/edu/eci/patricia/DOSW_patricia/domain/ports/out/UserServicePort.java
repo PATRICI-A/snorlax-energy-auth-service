@@ -33,10 +33,10 @@ public interface UserServicePort {
     void markUserAsVerified(String userId);
 
     /**
-     * Updates the user's hashed password in the profile service.
+     * Sends the new plain-text password to the profile service, which handles hashing.
      *
-     * @param userId            the user's ID
-     * @param newHashedPassword the new BCrypt-hashed password
+     * @param userId      the user's ID
+     * @param newPassword the new plain-text password
      */
-    void updatePassword(String userId, String newHashedPassword);
+    void updatePassword(String userId, String newPassword);
 }

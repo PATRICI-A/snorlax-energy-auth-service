@@ -10,6 +10,8 @@ import edu.eci.patricia.DOSW_patricia.domain.exceptions.OtpMaxAttemptsException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenExpiredException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.TokenInvalidException;
 import edu.eci.patricia.DOSW_patricia.domain.exceptions.UserAlreadyExistsException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -40,9 +42,25 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ErrorResponse.of("EXTERNAL_SERVICE_NOT_FOUND", "Resource not found in external service", null));
         }
+        if (ex.status() == 400) {
+            String message = extractMessageFromBody(ex);
+            return ResponseEntity.badRequest()
+                    .body(ErrorResponse.of("VALIDATION_ERROR", message, null));
+        }
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ErrorResponse.of("EXTERNAL_SERVICE_ERROR",
                         "External service unavailable (status " + ex.status() + ")", null));
+    }
+
+    private String extractMessageFromBody(FeignException ex) {
+        try {
+            if (ex.responseBody().isPresent()) {
+                byte[] bytes = ex.responseBody().get().array();
+                JsonNode node = new ObjectMapper().readTree(bytes);
+                if (node.has("message")) return node.get("message").asText();
+            }
+        } catch (Exception ignored) {}
+        return "Invalid request";
     }
 
     /**

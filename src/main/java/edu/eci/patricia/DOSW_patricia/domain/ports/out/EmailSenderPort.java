@@ -8,12 +8,23 @@ import java.util.UUID;
 public interface EmailSenderPort {
 
     /**
-     * Sends an OTP verification code to the given email address.
+     * Sends an OTP for initial registration verification.
+     * userId may be null if the user has not been persisted yet.
      *
      * @param to      recipient email address
      * @param otpCode 6-digit OTP code to send
+     * @param userId  user UUID; null during initial registration flow
      */
-    void sendOtp(String to, String otpCode);
+    void sendOtp(String to, String otpCode, UUID userId);
+
+    /**
+     * Sends an OTP resend code to an existing user's email address.
+     *
+     * @param to      recipient email address
+     * @param otpCode new 6-digit OTP code
+     * @param userId  the verified UUID of the account owner
+     */
+    void sendOtpResend(String to, String otpCode, UUID userId);
 
     /**
      * Sends a password recovery code to the given email address.

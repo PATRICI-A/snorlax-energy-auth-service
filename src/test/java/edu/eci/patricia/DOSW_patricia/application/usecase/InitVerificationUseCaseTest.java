@@ -29,7 +29,7 @@ class InitVerificationUseCaseTest {
         useCase.initVerification(new InitVerificationRequestDto(EMAIL, "hash"));
 
         verify(otpRedisRepository).save(any(OtpCache.class));
-        verify(emailSender).sendOtp(eq(EMAIL), anyString());
+        verify(emailSender).sendOtp(eq(EMAIL), anyString(), isNull());
     }
 
     @Test
@@ -46,7 +46,7 @@ class InitVerificationUseCaseTest {
         useCase.initVerification(new InitVerificationRequestDto(EMAIL, "hash"));
 
         ArgumentCaptor<String> otpCaptor = ArgumentCaptor.forClass(String.class);
-        verify(emailSender).sendOtp(anyString(), otpCaptor.capture());
+        verify(emailSender).sendOtp(anyString(), otpCaptor.capture(), isNull());
         assertTrue(otpCaptor.getValue().matches("\\d{6}"));
     }
 
