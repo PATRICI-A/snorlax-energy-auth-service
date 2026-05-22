@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Schema(description = "Request body sent by the registration service to trigger OTP generation and email dispatch for a new user")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,6 +15,7 @@ public class InitVerificationRequest {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Must be a valid email address")
-    @Schema(example = "juan.perez@mail.escuelaing.edu.co")
+    @Schema(description = "Institutional email address of the newly registered user. Must end in @mail.escuelaing.edu.co",
+            example = "juan.perez@mail.escuelaing.edu.co")
     private String email;
 }
