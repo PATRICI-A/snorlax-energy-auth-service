@@ -21,4 +21,4 @@ springdoc:
   swagger-ui:
     use-root-path: true
   servers:
-    - url: ${SERVER_URL:https://localhost}
+    - url: ${SERVER_URL:https://patricia-api-gateway-prod.ambitiousocean-47ea546c.eastus.azurecontainerapps.io}
