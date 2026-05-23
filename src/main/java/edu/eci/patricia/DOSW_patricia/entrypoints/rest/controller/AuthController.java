@@ -1,6 +1,7 @@
 package edu.eci.patricia.DOSW_patricia.entrypoints.rest.controller;
 
 import edu.eci.patricia.DOSW_patricia.application.dto.request.ChangePasswordRequestDto;
+import edu.eci.patricia.DOSW_patricia.application.dto.request.InitVerificationRequestDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.response.LoginResponseDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.response.RegisterResponseDto;
 import edu.eci.patricia.DOSW_patricia.domain.ports.in.ChangePasswordPort;
@@ -106,7 +107,7 @@ public class AuthController {
     })
     @PostMapping("/init-verification")
     public ResponseEntity<RegisterResponseDto> initVerification(
-            @Valid @RequestBody String mail) {
+            @Valid @RequestBody InitVerificationRequestDto mail) {
         initVerificationPort.initVerification(mail);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new RegisterResponseDto("OTP sent to email"));
