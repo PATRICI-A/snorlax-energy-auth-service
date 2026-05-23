@@ -3,6 +3,7 @@ package edu.eci.patricia.DOSW_patricia.infrastructure.adapters.adapter;
 import edu.eci.patricia.DOSW_patricia.application.dto.external.UserDto;
 import edu.eci.patricia.DOSW_patricia.domain.ports.out.UserServicePort;
 import edu.eci.patricia.DOSW_patricia.infrastructure.external.UserServiceFeignClient;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +27,11 @@ public class UserServiceFeignAdapter implements UserServicePort {
      */
     @Override
     public Optional<UserDto> findByEmail(String email) {
-        return Optional.ofNullable(feignClient.findByEmail(email));
+        try {
+            return Optional.ofNullable(feignClient.findByEmail(email));
+        } catch (FeignException.NotFound e) {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -37,7 +42,11 @@ public class UserServiceFeignAdapter implements UserServicePort {
      */
     @Override
     public Optional<UserDto> findById(String userId) {
-        return Optional.ofNullable(feignClient.findById(userId));
+        try {
+            return Optional.ofNullable(feignClient.findById(userId));
+        } catch (FeignException.NotFound e) {
+            return Optional.empty();
+        }
     }
 
     /**
