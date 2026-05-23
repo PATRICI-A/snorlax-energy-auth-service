@@ -148,15 +148,9 @@ Infrastructure (Redis / Feign / RabbitMQ adapters) ──┘
 | Servicio de Email / Notificaciones | Evento `OtpVerificationEventDto` o `PasswordResetEventDto` | Publica en RabbitMQ `auth.exchange` | `EmailSenderAdapter` loguea el OTP en consola como fallback; el flujo no se interrumpe |
 | Redis | OTPs, refresh tokens, bloqueos de cuenta | Spring Data Redis (`@RedisHash`) | Sin Redis el servicio no arranca |
 
-### Flujo General — Login
-
----
-
-## Diagramas de Secuencia
+### Diagramas de Secuencia
 
 Un diagrama de secuencia es un tipo de diagrama UML que muestra, en orden temporal, cómo interactúan los actores y los componentes del sistema mediante mensajes o llamadas.
-
-### Diagramas de Secuencia
 
 ### 1. Inicializar Verificación (Init Verification)
 
@@ -211,6 +205,54 @@ Representa la validación del código de recuperación, la actualización de la 
 Muestra el cambio de contraseña para un usuario autenticado: extracción del userId del Bearer token, validación de la contraseña actual y actualización con la nueva.
 
 ![ChangePassword](src/main/resources/ChangePassword.png)
+
+---
+
+## 5. Diagrama de Datos
+
+Este módulo **no persiste datos en una base de datos relacional**. Toda la persistencia es en **Redis** mediante entidades `@RedisHash`. A continuación se muestra el modelo de datos en caché:
+
+<!-- ============================================================ -->
+<!-- 📸 IMAGEN PENDIENTE: agregar diagrama del modelo Redis       -->
+<!-- Ruta esperada: src/main/resources/DiagramaDatos.png          -->
+<!-- Contenido sugerido: diagrama con las 4 entidades Redis       -->
+<!--   OtpCache, PasswordResetOtpCache, LockoutCache,            -->
+<!--   RefreshTokenCache — con sus campos y TTLs                  -->
+<!-- ============================================================ -->
+
+<div align="center">
+<img src="src/main/resources/DiagramaDatos.png" alt="Diagrama de Datos — Modelo Redis" width="700"/>
+</div>
+
+### Entidades Redis (`@RedisHash`)
+
+#### `OtpCache` — TTL: 600 s (10 min)
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | `String` | Email del usuario — clave del hash |
+| `otpCode` | `String` | Código OTP de 6 dígitos generado con SecureRandom |
+| `attempts` | `int` | Contador de intentos fallidos (máx. 3) |
+| `used` | `boolean` | Si el OTP ya fue consumido |
+
+#### `PasswordResetOtpCache` — TTL: 600 s (10 min)
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | `String` | Email del usuario — clave del hash |
+| `code` | `String` | Código de recuperación de 6 dígitos |
+| `userId` | `String` | UUID del usuario propietario |
+| `used` | `boolean` | Si el código ya fue consumido |
+
+#### `LockoutCache` — TTL: ~30 min
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | `String` | Email del usuario — clave del hash |
+| `failedAttempts` | `int` | Número de intentos fallidos de login (bloqueo a los 5) |
+| `locked` | `boolean` | Si la cuenta está bloqueada |
+
+#### `RefreshTokenCache` — TTL: 7 días
 
 | Campo | Tipo | Descripción |
 |---|---|---|
@@ -767,7 +809,7 @@ src/test/java/edu/eci/patricia/DOSW_patricia/
 ### Captura — Reporte JaCoCo
 
 <div align="center">
-<img src="src/main/resources/pruebas_auth.png" alt="Reporte de cobertura JaCoCo" width="700"/>
+<img src="src/main/resources/jacoco.png" alt="Reporte de cobertura JaCoCo" width="700"/>
 </div>
 
 ### Métricas objetivo
@@ -988,6 +1030,7 @@ snorlax-energy-auth-service/
 │   │       ├── application.yml                      # Config base (activa perfil desde $SPRING_PROFILES_ACTIVE)
 │   │       ├── application-dev.yml                  # Config dev: Redis, RabbitMQ CloudAMQP, JWT, Feign, Swagger
 │   │       ├── DiagramaClases.png
+│   │       ├── DiagramaDatos.png                    # ← agregar esta imagen (modelo Redis)
 │   │       ├── componentes especificos.png
 │   │       ├── componetes generales.png
 │   │       ├── despliegue.png
