@@ -1,6 +1,5 @@
 package edu.eci.patricia.DOSW_patricia.domain.ports.in;
 
-import edu.eci.patricia.DOSW_patricia.application.dto.request.InitVerificationRequestDto;
 
 /**
  * Input port for starting the OTP verification flow after user registration.
@@ -12,5 +11,5 @@ public interface InitVerificationPort {
      *
      * @param dto contains the institutional email and hashed password of the new user
      */
-    void initVerification(InitVerificationRequestDto dto);
+    void initVerification(String mail);
 }

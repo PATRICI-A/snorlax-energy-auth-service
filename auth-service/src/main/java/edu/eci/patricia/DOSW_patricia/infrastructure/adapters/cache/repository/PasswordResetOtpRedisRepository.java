@@ -1,7 +1,0 @@
-package edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.repository;
-
-import edu.eci.patricia.DOSW_patricia.infrastructure.adapters.cache.entity.PasswordResetOtpCache;
-import org.springframework.data.repository.CrudRepository;
-
-public interface PasswordResetOtpRedisRepository extends CrudRepository<PasswordResetOtpCache, String> {
-}
