@@ -59,12 +59,10 @@
 
 ## 1. Integrantes
 
-| Nombre | Rol |
-|---|---|
-| Sebastian Castillejo | Backend Developer |
-| Juan Melo | Backend Developer |
-| Samuel Gil | Backend Developer |
-| Maria Jose | Backend Developer |
+- Sebastian Castillejo
+- Juan Melo
+- Samuel Gil
+- Maria Jose
 
 ---
 
@@ -210,59 +208,7 @@ Muestra el cambio de contraseña para un usuario autenticado: extracción del us
 
 ## 5. Diagrama de Datos
 
-Este módulo **no persiste datos en una base de datos relacional**. Toda la persistencia es en **Redis** mediante entidades `@RedisHash`. A continuación se muestra el modelo de datos en caché:
-
-<!-- ============================================================ -->
-<!-- 📸 IMAGEN PENDIENTE: agregar diagrama del modelo Redis       -->
-<!-- Ruta esperada: src/main/resources/DiagramaDatos.png          -->
-<!-- Contenido sugerido: diagrama con las 4 entidades Redis       -->
-<!--   OtpCache, PasswordResetOtpCache, LockoutCache,            -->
-<!--   RefreshTokenCache — con sus campos y TTLs                  -->
-<!-- ============================================================ -->
-
-<div align="center">
-<img src="src/main/resources/DiagramaDatos.png" alt="Diagrama de Datos — Modelo Redis" width="700"/>
-</div>
-
-### Entidades Redis (`@RedisHash`)
-
-#### `OtpCache` — TTL: 600 s (10 min)
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `id` | `String` | Email del usuario — clave del hash |
-| `otpCode` | `String` | Código OTP de 6 dígitos generado con SecureRandom |
-| `attempts` | `int` | Contador de intentos fallidos (máx. 3) |
-| `used` | `boolean` | Si el OTP ya fue consumido |
-
-#### `PasswordResetOtpCache` — TTL: 600 s (10 min)
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `id` | `String` | Email del usuario — clave del hash |
-| `code` | `String` | Código de recuperación de 6 dígitos |
-| `userId` | `String` | UUID del usuario propietario |
-| `used` | `boolean` | Si el código ya fue consumido |
-
-#### `LockoutCache` — TTL: ~30 min
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `id` | `String` | Email del usuario — clave del hash |
-| `failedAttempts` | `int` | Número de intentos fallidos de login (bloqueo a los 5) |
-| `locked` | `boolean` | Si la cuenta está bloqueada |
-
-#### `RefreshTokenCache` — TTL: 7 días
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `refreshToken` (ID) | `String` | UUID del refresh token — clave del hash |
-| `userId` | `String` | UUID del usuario propietario |
-| `email` | `String` | Email del usuario |
-| `jwt` | `String` | Access token JWT asociado |
-| `revoked` | `boolean` | Si el token fue revocado (logout o rotación) |
-| `createdAt` | `LocalDateTime` | Fecha de creación |
-| `expiraRefresh` | `LocalDateTime` | Fecha de expiración del refresh token |
+Este módulo no persiste datos en una base de datos relacional ni documental. Toda la información de sesión se almacena temporalmente en **Redis** mediante entidades `@RedisHash` con TTL definido. No aplica diagrama entidad-relación.
 
 ---
 
@@ -357,6 +303,22 @@ Este módulo **no persiste datos en una base de datos relacional**. Toda la pers
 ---
 
 ## 9. Endpoints Expuestos
+
+### Resumen
+
+| Método | Endpoint | Funcionalidad | Auth requerida | Código exitoso |
+|---|---|---|---|---|
+| `POST` | `/api/v1/auth/init-verification` | F01 — Inicializar OTP | No | 201 |
+| `POST` | `/api/v1/auth/verify-otp` | F02 — Verificar OTP | No | 200 |
+| `POST` | `/api/v1/auth/resend-otp` | F03 — Reenviar OTP | No | 200 |
+| `POST` | `/api/v1/auth/login` | F04 — Login | No | 200 |
+| `POST` | `/api/v1/auth/refresh` | F05 — Renovar access token | No | 200 |
+| `POST` | `/api/v1/auth/logout` | F06 — Logout | Bearer JWT | 200 |
+| `POST` | `/api/v1/auth/forgot-password` | F07 — Olvidé mi contraseña | No | 200 |
+| `POST` | `/api/v1/auth/reset-password` | F08 — Restablecer contraseña | No | 200 |
+| `POST` | `/api/v1/auth/change-password` | F09 — Cambiar contraseña | Bearer JWT | 200 |
+
+---
 
 ### F01 — Inicializar Verificación OTP
 
@@ -699,22 +661,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ---
 
-### Resumen de todos los Endpoints
-
-| Método | Endpoint | Funcionalidad | Auth requerida | Código exitoso |
-|---|---|---|---|---|
-| `POST` | `/api/v1/auth/init-verification` | F01 — Inicializar OTP | No | 201 |
-| `POST` | `/api/v1/auth/verify-otp` | F02 — Verificar OTP | No | 200 |
-| `POST` | `/api/v1/auth/resend-otp` | F03 — Reenviar OTP | No | 200 |
-| `POST` | `/api/v1/auth/login` | F04 — Login | No | 200 |
-| `POST` | `/api/v1/auth/refresh` | F05 — Renovar access token | No | 200 |
-| `POST` | `/api/v1/auth/logout` | F06 — Logout | Bearer JWT | 200 |
-| `POST` | `/api/v1/auth/forgot-password` | F07 — Olvidé mi contraseña | No | 200 |
-| `POST` | `/api/v1/auth/reset-password` | F08 — Restablecer contraseña | No | 200 |
-| `POST` | `/api/v1/auth/change-password` | F09 — Cambiar contraseña | Bearer JWT | 200 |
-
----
-
 ## 10. Colas de Mensajería
 
 **Broker utilizado:** RabbitMQ (CloudAMQP en dev/prod, contenedor local en Docker Compose)
@@ -788,25 +734,11 @@ src/test/java/edu/eci/patricia/DOSW_patricia/
 ./mvnw verify
 ```
 
-### Captura — Resultado de ejecución
-
-<div align="center">
-<img src="src/main/resources/unitarias.png" alt="Evidencia pruebas unitarias" width="700"/>
-</div>
-
 ---
 
 ## 12. Evidencia de Análisis de Cobertura
 
-### Generar el reporte
-
-```bash
-./mvnw clean test jacoco:report
-# Reporte HTML: target/site/jacoco/index.html
-# Reporte XML:  target/site/jacoco/jacoco.xml  (consumido por SonarCloud)
-```
-
-### Captura — Reporte JaCoCo
+Cobertura mínima esperada > 80%.
 
 <div align="center">
 <img src="src/main/resources/jacoco.png" alt="Reporte de cobertura JaCoCo" width="700"/>
@@ -898,9 +830,13 @@ docker compose down -v
 
 ## 14. Evidencia del Despliegue CI/CD
 
+El pipeline `.github/workflows/ci.yml` corre en cada push a `main` o `develop`:
+
 <div align="center">
 <img src="src/main/resources/evidencia despligue.png" alt="Evidencia de despliegue GitHub Actions" width="700"/>
 </div>
+
+El pipeline `.github/workflows/cd.yml` despliega automáticamente a Azure tras CI exitoso en `main`:
 
 <div align="center">
 <img src="src/main/resources/despliegue.png" alt="Despliegue en Azure App Service" width="700"/>
@@ -1027,10 +963,9 @@ snorlax-energy-auth-service/
 │   │   │   └── DoswPatriciaApplication.java         # Main — @SpringBootApplication @EnableFeignClients
 │   │   │
 │   │   └── resources/
-│   │       ├── application.yml                      # Config base (activa perfil desde $SPRING_PROFILES_ACTIVE)
-│   │       ├── application-dev.yml                  # Config dev: Redis, RabbitMQ CloudAMQP, JWT, Feign, Swagger
+│   │       ├── application.yml
+│   │       ├── application-dev.yml
 │   │       ├── DiagramaClases.png
-│   │       ├── DiagramaDatos.png                    # ← agregar esta imagen (modelo Redis)
 │   │       ├── componentes especificos.png
 │   │       ├── componetes generales.png
 │   │       ├── despliegue.png
@@ -1040,20 +975,20 @@ snorlax-energy-auth-service/
 │   │
 │   └── test/
 │       └── java/edu/eci/patricia/DOSW_patricia/
-│           ├── application/usecase/      # 9 clases de prueba — una por use case
-│           ├── domain/model/             # UserTest, RefreshTokenTest
-│           ├── domain/valueobjects/      # EmailTest, OtpCodeTest, PasswordTest, JwtTokenTest, OtpEmbeddedTest
-│           ├── entrypoints/advice/       # GlobalExceptionHandlerTest
-│           ├── entrypoints/rest/         # AuthControllerTest
-│           └── infrastructure/external/ # JwtServiceTest
+│           ├── application/usecase/
+│           ├── domain/model/
+│           ├── domain/valueobjects/
+│           ├── entrypoints/advice/
+│           ├── entrypoints/rest/
+│           └── infrastructure/external/
 │
 ├── .github/workflows/
-│   ├── ci.yml           # CI — Build & Test con Redis, JaCoCo, Surefire, JAR artifact
-│   ├── cd.yml           # CD — Deploy JAR a Azure App Service (post CI en main)
-│   └── sonar.yml        # QA — SonarCloud analysis (push/PR a main/develop)
-├── Dockerfile           # Multi-stage: Maven 3.9 JDK21 alpine → JRE alpine, EXPOSE 8080
-├── docker-compose.yml   # auth-service + Redis + RabbitMQ + SonarQube + sonar-db
-├── DEPLOYMENT_AZURE.md  # Guía completa de configuración en Azure App Service
+│   ├── ci.yml
+│   ├── cd.yml
+│   └── sonar.yml
+├── Dockerfile
+├── docker-compose.yml
+├── DEPLOYMENT_AZURE.md
 ├── pom.xml
 └── README.md
 ```
@@ -1072,7 +1007,7 @@ Todos los endpoints del `AuthController` están documentados con anotaciones Ope
 Los use cases documentan únicamente lógica no obvia mediante comentarios en línea (constantes de negocio: `MAX_FAILED_ATTEMPTS = 5`, `MAX_ATTEMPTS = 3`). El `Dockerfile`, `pom.xml` y `docker-compose.yml` contienen comentarios explicando decisiones de infraestructura (multi-stage build, caché de capas Docker, exclusiones de JaCoCo).
 
 Acceso a la documentación interactiva:
-- **Swagger UI:** `/swagger-ui.html` (también en la raíz `/` por `use-root-path: true`)
+- **Swagger UI:** `/swagger-ui.html`
 - **OpenAPI JSON:** `/v3/api-docs`
 
 ---
@@ -1091,19 +1026,19 @@ Acceso a la documentación interactiva:
 
 ## 19. Pipeline de Desarrollo
 
-El pipeline `.github/workflows/ci.yml` se ejecuta en cada push a `main` o `develop` y en cada PR hacia esas ramas.
+Perfil: **`dev`** — Redis local, sin PostgreSQL ni Docker requerido.
 
-### Pasos del pipeline
+### Pasos del pipeline CI (`.github/workflows/ci.yml`)
 
 | Paso | Acción | Descripción |
 |---|---|---|
-| 1 | Checkout | `actions/checkout@v4` con `fetch-depth: 0` (requerido por SonarCloud) |
+| 1 | Checkout | `actions/checkout@v4` con `fetch-depth: 0` |
 | 2 | Setup JDK 21 | `actions/setup-java@v4` distribución Temurin, caché Maven |
 | 3 | Redis service | Contenedor `redis:7-alpine` con healthcheck `redis-cli ping` |
 | 4 | Build & Test | `mvn clean verify -B` — compila, tests, JaCoCo. Falla si cobertura < 80% |
-| 5 | Upload JaCoCo | Artefacto `jacoco-report` — `target/site/jacoco/` (retención 14 días) |
-| 6 | Upload Surefire | Artefacto `surefire-reports` — `target/surefire-reports/` (retención 14 días) |
-| 7 | Upload JAR | Artefacto `auth-service-jar` — `target/auth-service-*.jar` (retención 14 días) |
+| 5 | Upload JaCoCo | Artefacto `jacoco-report` (retención 14 días) |
+| 6 | Upload Surefire | Artefacto `surefire-reports` (retención 14 días) |
+| 7 | Upload JAR | Artefacto `auth-service-jar` (retención 14 días) |
 
 ```yaml
 name: CI – Build & Test
@@ -1137,27 +1072,23 @@ jobs:
           SPRING_PROFILES_ACTIVE: dev
 ```
 
-### Pipeline QA — SonarCloud (`.github/workflows/sonar.yml`)
-
-Se ejecuta en paralelo con el CI. Corre `mvn clean verify` para generar el reporte JaCoCo XML y lo envía a SonarCloud via `SonarSource/sonarcloud-github-action@v3`.
-
-**Secrets requeridos:** `SONAR_TOKEN`, `GITHUB_TOKEN`
+**No requiere:** PostgreSQL, Docker, Kafka.
 
 ---
 
 ## 20. Pipeline de Producción
 
-El pipeline `.github/workflows/cd.yml` se activa automáticamente cuando el pipeline CI completa exitosamente en la rama `main` (`workflow_run` trigger).
+Perfil: **`docker`** — Redis + RabbitMQ en contenedores. El pipeline `.github/workflows/cd.yml` se activa automáticamente cuando CI completa exitosamente en `main`.
 
-### Pasos del pipeline
+### Pasos del pipeline CD
 
 | Paso | Acción | Descripción |
 |---|---|---|
 | 1 | Checkout | `actions/checkout@v4` |
 | 2 | Setup JDK 21 | `actions/setup-java@v4` con caché Maven |
-| 3 | Build JAR | `mvn package -DskipTests -B` — genera el JAR de producción |
+| 3 | Build JAR | `mvn package -DskipTests -B` |
 | 4 | Azure Login | `azure/login@v2` usando `AZURE_CREDENTIALS` |
-| 5 | Deploy JAR | `azure/webapps-deploy@v3` — despliega `target/auth-service-*.jar` en App Service |
+| 5 | Deploy JAR | `azure/webapps-deploy@v3` — despliega en App Service |
 | 6 | Show URL | Loguea la URL de la API y Swagger desplegados |
 
 ```yaml
@@ -1187,12 +1118,10 @@ jobs:
 
 | Secret | Descripción |
 |---|---|
-| `AZURE_CREDENTIALS` | JSON del Service Principal (clientId, clientSecret, tenantId, subscriptionId) |
-| `AZURE_APP_SERVICE_NAME` | Nombre del App Service en Azure (ej. `app-patricia-auth`) |
+| `AZURE_CREDENTIALS` | JSON del Service Principal |
+| `AZURE_APP_SERVICE_NAME` | Nombre del App Service en Azure |
 | `JWT_SECRET_TEST` | Clave JWT para el entorno de CI (≥ 32 caracteres) |
 | `SONAR_TOKEN` | Token de autenticación de SonarCloud |
-
-Ver la guía completa de configuración en [DEPLOYMENT_AZURE.md](DEPLOYMENT_AZURE.md).
 
 ### Captura — Pipeline de producción
 
@@ -1208,36 +1137,25 @@ Ver la guía completa de configuración en [DEPLOYMENT_AZURE.md](DEPLOYMENT_AZUR
 
 ```dockerfile
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-# maven:3.9-eclipse-temurin-21-alpine incluye Maven + JDK 21
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
-
-# Copia pom.xml primero → las dependencias se cachean como capa separada
-# Mientras pom.xml no cambie, Docker reutiliza esta capa aunque el código sí cambie
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
-
 COPY src ./src
 RUN mvn package -DskipTests -B
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
-# Imagen mínima con solo JRE (~90 MB vs ~500 MB del JDK)
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-
 ENV PORT=8080
 EXPOSE 8080
-
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD wget -qO- http://localhost:8080/actuator/health || exit 1
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
 ### Docker Compose
-
-El `docker-compose.yml` levanta los siguientes servicios:
 
 | Servicio | Imagen | Puertos | Descripción |
 |---|---|---|---|
@@ -1251,7 +1169,7 @@ El `docker-compose.yml` levanta los siguientes servicios:
 # Levantar todos los servicios
 docker compose up --build
 
-# Solo auth-service + Redis (más liviano para desarrollo)
+# Solo auth-service + Redis
 docker compose up auth-service redis
 
 # Ver logs en tiempo real
@@ -1260,8 +1178,6 @@ docker compose logs -f auth-service
 # Detener y eliminar volúmenes
 docker compose down -v
 ```
-
-> **Nota:** `docker-compose.yml` expone el puerto `9090` localmente. Para despliegue en Azure (CD pipeline) se usa el `Dockerfile` directamente y Azure enruta al puerto `8080`.
 
 ---
 
@@ -1283,7 +1199,7 @@ hotfix/[descripcion-del-fix]
 release/[version]
 ```
 
-### Convenciones de commits (Conventional Commits)
+### Convenciones de commits
 
 ```
 [tipo]: [descripción específica de la acción]
