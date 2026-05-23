@@ -227,11 +227,6 @@ Este módulo **no persiste usuarios propios** — delega esa responsabilidad al 
 
 ## 7. Diagrama de Componentes
 
-### General
-
-<div align="center">
-<img src="src/main/resources/componetes generales.png" alt="Diagrama de Componentes General" width="600"/>
-</div>
 
 ### Específico
 
