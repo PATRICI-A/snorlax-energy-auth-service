@@ -34,26 +34,26 @@
 
 1. [Integrantes](#1-integrantes)
 2. [Tecnologías Utilizadas](#2-tecnologías-utilizadas)
-3. [Descripción del Módulo](#3-descripción-del-módulo)
-4. [Cómo Funciona el Módulo](#4-cómo-funciona-el-módulo)
+3. [Descripción del Microservicio](#3-descripción-del-microservicio)
+4. [Cómo Funciona](#4-cómo-funciona)
 5. [Diagrama de Datos](#5-diagrama-de-datos)
 6. [Diagrama de Clases](#6-diagrama-de-clases)
 7. [Diagrama de Componentes](#7-diagrama-de-componentes)
-8. [Funcionalidades del Módulo](#8-funcionalidades-del-módulo)
-9. [Endpoints Expuestos](#9-endpoints-expuestos)
+8. [Funcionalidades Principales](#8-funcionalidades-principales)
+9. [Endpoints](#9-endpoints)
 10. [Colas de Mensajería](#10-colas-de-mensajería)
-11. [Evidencia de Pruebas Unitarias](#11-evidencia-de-pruebas-unitarias)
-12. [Evidencia de Análisis de Cobertura](#12-evidencia-de-análisis-de-cobertura)
-13. [Cómo Ejecutar el Proyecto](#13-cómo-ejecutar-el-proyecto)
-14. [Evidencia del Despliegue CI/CD](#14-evidencia-del-despliegue-cicd)
-15. [Link Swagger Desplegado](#15-link-swagger-desplegado)
+11. [Evidencia de Pruebas](#11-evidencia-de-pruebas)
+12. [Evidencia de Cobertura](#12-evidencia-de-cobertura)
+13. [Cómo Ejecutar](#13-cómo-ejecutar)
+14. [Evidencia CI/CD](#14-evidencia-cicd)
+15. [Link Swagger](#15-link-swagger)
 16. [Estructura del Código](#16-estructura-del-código)
 17. [Código Documentado](#17-código-documentado)
-18. [Conexiones con Servicios Externos](#18-conexiones-con-servicios-externos)
+18. [Conexiones Externas](#18-conexiones-externas)
 19. [Pipeline de Desarrollo](#19-pipeline-de-desarrollo)
 20. [Pipeline de Producción](#20-pipeline-de-producción)
 21. [Dockerizado](#21-dockerizado)
-22. [Estrategia de Versionamiento](#22-estrategia-de-versionamiento)
+22. [Versionamiento](#22-versionamiento)
 
 ---
 
@@ -68,41 +68,42 @@
 
 ## 2. Tecnologías Utilizadas
 
-| Tecnología / Herramienta | Versión | Uso en el módulo |
-|---|---|---|
-| Java (OpenJDK) | 21 LTS | Lenguaje base del módulo |
-| Spring Boot | 4.0.6 | Framework principal |
-| Spring Web | Incluido | Exposición de endpoints REST |
-| Spring Security | Incluido | Configuración stateless, BCrypt, CORS |
-| JJWT (io.jsonwebtoken) | 0.12.6 | Generación y validación de tokens JWT HMAC-SHA256 |
-| Spring Data Redis | Incluido | Caché de OTPs (TTL 10 min), refresh tokens (TTL 7 días) y bloqueos de cuenta |
-| Spring AMQP (RabbitMQ) | Incluido | Publicación de eventos de email vía CloudAMQP |
-| Spring Cloud OpenFeign | 2025.1.1 (BOM) | Cliente HTTP declarativo para llamadas al User Service (M02) |
-| MapStruct | 1.6.3 | Mapeo entre requests REST y DTOs de aplicación |
-| Lombok | 1.18.36 | Reducción de boilerplate (builders, constructores, logs) |
-| JUnit 5 | Incluido | Pruebas unitarias |
-| Mockito | Incluido | Simulación de dependencias en pruebas |
-| JaCoCo | 0.8.12 | Análisis de cobertura (mínimo 80% instrucciones configurado como regla) |
-| SpringDoc OpenAPI | 2.8.6 | Generación automática de Swagger UI |
-| SonarCloud | N/A | Análisis estático de calidad en pipeline `sonar.yml` |
-| Apache Maven | 3.9+ | Gestión de dependencias y build |
-| Docker | 24.x | Contenedorización con multi-stage build |
-| GitHub Actions | N/A | Pipelines CI (`ci.yml`), CD (`cd.yml`) y QA (`sonar.yml`) |
-| Redis | 7-alpine | Almacenamiento en memoria de sesiones, OTPs y bloqueos |
-| RabbitMQ (CloudAMQP) | 3-management-alpine | Broker para eventos de correo electrónico |
+| **Tecnología / Herramienta** | **Uso principal en el proyecto** |
+|---|---|
+| **Java 21 (OpenJDK)** | Lenguaje base del módulo. LTS hasta 2029. |
+| **Spring Boot 4.0.6** | Framework principal. Agrupa Security, Redis, OpenFeign y Swagger en un solo ecosistema. |
+| **Spring Web** | Exposición de 9 endpoints REST bajo `/api/v1/auth/**`. |
+| **Spring Security** | Configuración stateless, BCrypt, CORS y rutas públicas. |
+| **JJWT (io.jsonwebtoken) 0.12.6** | Generación y validación de tokens JWT HMAC-SHA256. |
+| **Spring Data Redis** | Caché de OTPs (TTL 10 min), refresh tokens (TTL 7 días) y bloqueos de cuenta. |
+| **Spring AMQP (RabbitMQ)** | Publicación de eventos de email vía CloudAMQP. |
+| **Spring Cloud OpenFeign 2025.1.1** | Cliente HTTP declarativo para llamadas al User Service (M02). |
+| **MapStruct 1.6.3** | Mapeo entre requests REST y DTOs de aplicación. |
+| **Lombok 1.18.36** | Reducción de boilerplate (builders, constructores, logs). |
+| **JUnit 5** | Framework de pruebas unitarias. |
+| **Mockito** | Simulación de dependencias en pruebas. |
+| **JaCoCo 0.8.12** | Análisis de cobertura (mínimo 80% instrucciones configurado como regla). |
+| **SpringDoc OpenAPI 2.8.6** | Generación automática de Swagger UI. |
+| **SonarCloud** | Análisis estático de calidad en pipeline `sonar.yml`. |
+| **Apache Maven 3.9+** | Gestión de dependencias y build. |
+| **Docker 24.x** | Contenedorización con multi-stage build. |
+| **GitHub Actions** | Pipelines CI (`ci.yml`), CD (`cd.yml`) y QA (`sonar.yml`). |
+| **Redis 7-alpine** | Almacenamiento en memoria de sesiones, OTPs y bloqueos. |
+| **RabbitMQ 3-management-alpine** | Broker para eventos de correo electrónico. |
 
 ---
 
-## 3. Descripción del Módulo
+## 3. Descripción del Microservicio
 
-**Identificador:** M01  
-**Nombre técnico del repositorio:** `snorlax-energy-auth-service`  
-**Puerto local:** 8080  
-**Puerto Docker:** 8080 (CD Azure) / 9090 (docker-compose local)
+El microservicio de **Autenticación e Identidad** (M01) es el guardián de sesiones de la plataforma PATRICI.A. Sus responsabilidades principales son:
 
-El módulo M01 es el responsable de toda la gestión de identidad y autenticación dentro de la red social universitaria **PATRICI.A**. Implementa el registro con verificación OTP por correo institucional, inicio de sesión seguro con tokens JWT de corta duración y refresh tokens de larga duración almacenados en Redis, y un flujo completo de recuperación y cambio de contraseña.
+- **Verificación OTP:** genera un código de 6 dígitos, lo almacena en Redis (TTL 10 min) y lo publica en RabbitMQ para entrega por correo institucional.
+- **Login seguro:** autentica con email y contraseña BCrypt. Bloquea la cuenta tras 5 intentos fallidos. Emite JWT (15 min) + refresh token (7 días).
+- **Rotación de tokens:** intercambia un refresh token válido por un nuevo par JWT/refresh token, invalidando el anterior.
+- **Recuperación de contraseña:** genera y publica un código de un solo uso por correo institucional.
+- **Cambio de contraseña autenticado:** verifica la contraseña actual y actualiza con la nueva.
 
-Este módulo **no persiste usuarios propios** — delega esa responsabilidad al User Service (M02) y actúa exclusivamente como guardián de sesiones y verificaciones.
+Puerto: `8080`. Este módulo **no persiste usuarios propios** — delega esa responsabilidad al User Service (M02) y actúa exclusivamente como guardián de sesiones y verificaciones. Toda la persistencia es en **Redis** mediante entidades `@RedisHash`.
 
 **Requisitos funcionales que implementa este módulo:**
 
@@ -115,94 +116,46 @@ Este módulo **no persiste usuarios propios** — delega esa responsabilidad al 
 
 ---
 
-## 4. Cómo Funciona el Módulo
+## 4. Cómo Funciona
 
-### Estilo de Arquitectura: Hexagonal (Ports & Adapters)
-
-El módulo implementa Arquitectura Hexagonal. El dominio no conoce frameworks ni bases de datos. Los controladores REST y los adaptadores de Redis/Feign/RabbitMQ implementan puertos (interfaces). El flujo de dependencias es unidireccional:
+### Arquitectura Hexagonal (Ports & Adapters)
 
 ```
-Entrypoints (REST) → Application (Use Cases) → Domain (Ports)
-                                                      ↑
-Infrastructure (Redis / Feign / RabbitMQ adapters) ──┘
+┌─────────────────────────────────────────────────────┐
+│                    EXTERIOR                         │
+│  ┌──────────────┐         ┌──────────────────────┐  │
+│  │  Controllers │         │  Redis Adapters      │  │
+│  │  (REST)      │         │  Feign Adapter       │  │
+│  │  Port In ──► │         │  RabbitMQ Adapter    │  │
+│  └──────┬───────┘         └────────────┬─────────┘  │
+│         │          DOMINIO             │ ◄ Port Out  │
+│         ▼   ┌────────────────────┐    │             │
+│         └──►│  Application       │◄───┘             │
+│             │  Use Cases         │                   │
+│             └────────────────────┘                   │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Patrones de Diseño Utilizados
+**Flujo de dependencias:** `Entrypoints / Infrastructure → Application → Domain`
 
-| Patrón | Clase(s) donde aplica | Por qué se usa |
+### Patrones de Diseño
+
+| Patrón | Ubicación | Descripción |
 |---|---|---|
-| Ports & Adapters | Todos los puertos `in/` y `out/` | Desacopla el dominio de Spring, Redis, Feign y RabbitMQ |
-| Use Case por operación | `LoginUseCase`, `ValidateOtpUseCase`, `ForgotPasswordUseCase`, etc. | Una clase = una responsabilidad de negocio (SRP) |
-| Value Object | `Email`, `OtpCode`, `Password`, `JwtToken`, `OtpEmbedded` | Encapsula validaciones de negocio en el propio tipo |
-| Adapter | `UserServiceFeignAdapter`, `EmailSenderAdapter`, `RefreshTokenRepositoryAdapter` | Conecta puertos de dominio con tecnologías externas |
-| Repository (caché) | `RefreshTokenRepositoryAdapter`, `OtpRedisRepository`, etc. | Abstrae el almacenamiento Redis del dominio |
-| Global Exception Handler | `GlobalExceptionHandler` (@RestControllerAdvice) | Centraliza el mapeo de excepciones de dominio a códigos HTTP |
+| **Ports & Adapters** | Toda la arquitectura | 9 puertos de entrada (uno por use case) + 3 de salida. |
+| **Use Case por operación** | `LoginUseCase`, `ValidateOtpUseCase`, etc. | Una clase = una responsabilidad de negocio (SRP). |
+| **Value Object** | `Email`, `OtpCode`, `Password`, `JwtToken`, `OtpEmbedded` | Encapsula validaciones de negocio en el propio tipo. |
+| **Adapter** | `UserServiceFeignAdapter`, `EmailSenderAdapter`, `RefreshTokenRepositoryAdapter` | Conecta puertos de dominio con tecnologías externas. |
+| **Repository (caché)** | `OtpRedisRepository`, `RefreshTokenRedisRepository`, etc. | Abstrae el almacenamiento Redis del dominio. |
+| **Global Exception Handler** | `GlobalExceptionHandler` (@RestControllerAdvice) | Centraliza el mapeo de 10+ excepciones de dominio a códigos HTTP. |
 
-### Módulos que Consume / Produce
+### Conexión con Otros Microservicios
 
-| Módulo | Dato que consume/produce | Cómo lo obtiene | Impacto si falla |
+| Microservicio | Protocolo | Dirección | Dato |
 |---|---|---|---|
-| M02 — User Service | `userId`, `email`, `passwordHash`, `verified` | HTTP REST via OpenFeign (`/api/v1/internal/users/*`) | `GlobalExceptionHandler` retorna 503 o 404 según el status Feign |
-| Servicio de Email / Notificaciones | Evento `OtpVerificationEventDto` o `PasswordResetEventDto` | Publica en RabbitMQ `auth.exchange` | `EmailSenderAdapter` loguea el OTP en consola como fallback; el flujo no se interrumpe |
-| Redis | OTPs, refresh tokens, bloqueos de cuenta | Spring Data Redis (`@RedisHash`) | Sin Redis el servicio no arranca |
-
-### Diagramas de Secuencia
-
-Un diagrama de secuencia es un tipo de diagrama UML que muestra, en orden temporal, cómo interactúan los actores y los componentes del sistema mediante mensajes o llamadas.
-
-### 1. Inicializar Verificación (Init Verification)
-
-Muestra el flujo de inicialización: generación de OTP de 6 dígitos, almacenamiento en cache (Redis) y envío al correo institucional.
-
-![INITVerificacion](src/main/resources/INITVerificacion.png)
-
-### 2. Verificar OTP (Verify OTP)
-
-Describe la validación del código OTP, la activación de la cuenta en el User Service y la generación de tokens JWT (access + refresh).
-
-![VerifyOTP](src/main/resources/VerifyOTP.png)
-
-### 3. Reenviar OTP (Resend OTP)
-
-Muestra el proceso para generar y reenviar un nuevo OTP cuando el anterior ha expirado o se agotaron los 3 intentos de validación.
-
-![ResendOTP](src/main/resources/ResendOTP.png)
-
-### 4. Login
-
-Representa el inicio de sesión con validación de email y contraseña, verificación del estado de la cuenta, manejo de bloqueos tras intentos fallidos y emisión de tokens.
-
-![Login](src/main/resources/Longin.png)
-
-### 5. Refresh Token
-
-Ilustra la rotación de tokens: validación del refresh token, invalidación del anterior y emisión de un nuevo par (access + refresh).
-
-![RefreshToken](src/main/resources/RefreshToken.png)
-
-### 6. Logout
-
-Explica el cierre de sesión mediante la extracción del userId del Bearer token y la eliminación del refresh token activo en Redis.
-
-![Logout](src/main/resources/Logout.png)
-
-### 7. Forgot Password
-
-Describe la solicitud de recuperación de contraseña: búsqueda del usuario, generación del código de recuperación de 6 dígitos y envío al correo.
-
-![ForgotPassword](src/main/resources/ForgotPassword.png)
-
-### 8. Reset Password
-
-Representa la validación del código de recuperación, la actualización de la contraseña (hasheada con BCrypt) y la eliminación del código usado.
-
-![ResetPassword](src/main/resources/ResetPassword.png)
-
-### 9. Change Password
-
-Muestra el cambio de contraseña para un usuario autenticado: extracción del userId del Bearer token, validación de la contraseña actual y actualización con la nueva.
-
-![ChangePassword](src/main/resources/ChangePassword.png)
+| M02 — User Service | HTTP REST via OpenFeign | M01 → M02 | M01 consulta y actualiza usuarios en M02 (`/api/v1/internal/users/*`). Si M02 no responde → 503. |
+| Servicio de Notificaciones | RabbitMQ (publicación) | M01 → RabbitMQ | M01 publica eventos `auth.otp.verification` y `auth.password.reset`. El consumidor entrega el correo. |
+| Redis | Spring Data Redis | M01 → Redis | OTPs (TTL 10 min), refresh tokens (TTL 7 días), bloqueos de cuenta. Sin Redis el servicio no arranca. |
 
 ---
 
@@ -218,55 +171,27 @@ Este módulo no persiste datos en una base de datos relacional ni documental. To
 <img src="src/main/resources/DiagramaClases.png" alt="Diagrama de Clases" width="700"/>
 </div>
 
-**Descripción del diagrama:** Muestra las capas de dominio y aplicación: las entidades `User` y `RefreshToken`, sus value objects (`Email`, `OtpCode`, `Password`, `JwtToken`, `OtpEmbedded`), los nueve puertos de entrada (uno por use case), los tres puertos de salida (`UserServicePort`, `EmailSenderPort`, `RefreshTokenRepositoryPort`), y las implementaciones de use case que los conectan.
+**Resumen del diseño de dominio:**
 
-### Clases principales del dominio
-
-| Clase | Tipo | Responsabilidad |
-|---|---|---|
-| `User` | Model | Entidad de dominio del usuario — contiene estado de verificación, lockout y OTPs |
-| `RefreshToken` | Model | Entidad de sesión — contiene el par JWT/refresh token y su estado de revocación |
-| `Email` | Value Object | Encapsula y valida el formato del email |
-| `OtpCode` | Value Object | Valida que el OTP sea exactamente 6 dígitos numéricos |
-| `OtpEmbedded` | Value Object | OTP con timestamp de generación y estado de uso |
-| `Password` | Value Object | Valida la complejidad mínima de contraseña |
-| `JwtToken` | Value Object | Encapsula el string del JWT y su extracción de claims |
-| `RolEnum` | Enum | Roles del sistema (STUDENT, ADMIN, etc.) |
-| `Genero` | Enum | Géneros disponibles en el perfil de usuario |
-| `Interes` | Enum | Intereses disponibles en el perfil de usuario |
-| `ProfileVisibility` | Enum | Visibilidad del perfil (PUBLIC, PRIVATE, etc.) |
-| `LoginPort` | Port In | Contrato del caso de uso de login |
-| `InitVerificationPort` | Port In | Contrato del caso de uso de inicio de verificación OTP |
-| `ValidateOtpPort` | Port In | Contrato del caso de uso de validación OTP |
-| `ResendOtpPort` | Port In | Contrato del caso de uso de reenvío de OTP |
-| `LogoutPort` | Port In | Contrato del caso de uso de logout |
-| `RefreshTokenPort` | Port In | Contrato del caso de uso de renovación de token |
-| `ForgotPasswordPort` | Port In | Contrato del caso de uso de olvidé mi contraseña |
-| `ResetPasswordPort` | Port In | Contrato del caso de uso de restablecimiento de contraseña |
-| `ChangePasswordPort` | Port In | Contrato del caso de uso de cambio de contraseña autenticado |
-| `UserServicePort` | Port Out | Contrato para consultar/actualizar usuarios en el User Service |
-| `EmailSenderPort` | Port Out | Contrato para publicar eventos de email |
-| `RefreshTokenRepositoryPort` | Port Out | Contrato para persistir/consultar refresh tokens en Redis |
+- **`User`** — entidad de dominio del usuario: contiene estado de verificación, lockout y OTPs.
+- **`RefreshToken`** — entidad de sesión: contiene el par JWT/refresh token y su estado de revocación.
+- **`Email`** — value object: encapsula y valida el formato del email institucional.
+- **`OtpCode`** — value object: valida que el OTP sea exactamente 6 dígitos numéricos.
+- **`OtpEmbedded`** — value object: OTP con timestamp de generación y estado de uso.
+- **`Password`** — value object: valida la complejidad mínima de contraseña.
+- **`JwtToken`** — value object: encapsula el string del JWT y su extracción de claims.
+- **9 Ports In** — uno por use case: `LoginPort`, `InitVerificationPort`, `ValidateOtpPort`, `ResendOtpPort`, `LogoutPort`, `RefreshTokenPort`, `ForgotPasswordPort`, `ResetPasswordPort`, `ChangePasswordPort`.
+- **3 Ports Out** — `UserServicePort`, `EmailSenderPort`, `RefreshTokenRepositoryPort`.
 
 ---
 
 ## 7. Diagrama de Componentes
 
-### General
-
 <div align="center">
-<img src="src/main/resources/componetes generales.png" alt="Diagrama de Componentes General" width="700"/>
+<img src="src/main/resources/componetes generales.png" alt="Diagrama de Componentes" width="700"/>
 </div>
 
-### Específico
-
-<div align="center">
-<img src="src/main/resources/componentes especificos.png" alt="Diagrama de Componentes Específico" width="700"/>
-</div>
-
-**Descripción:** Muestra los bloques funcionales del módulo: `AuthController` como punto de entrada REST, los nueve use cases de aplicación, los tres adaptadores de salida (`UserServiceFeignAdapter` → User Service HTTP, `EmailSenderAdapter` → RabbitMQ, `RefreshTokenRepositoryAdapter` → Redis), y las cuatro entidades de caché Redis.
-
-| Componente | Tipo | Interfaces que expone |
+| Componente | Tipo | Interfaz |
 |---|---|---|
 | `AuthController` | REST Controller | `POST /api/v1/auth/**` (9 endpoints) |
 | `LoginUseCase` | Application Use Case | Puerto In: `LoginPort` |
@@ -286,23 +211,23 @@ Este módulo no persiste datos en una base de datos relacional ni documental. To
 
 ---
 
-## 8. Funcionalidades del Módulo
+## 8. Funcionalidades Principales
 
-| ID | Funcionalidad | RF asociado | Descripción |
+| ID | RF | Funcionalidad | Descripción |
 |---|---|---|---|
-| F01 | Inicializar verificación OTP | RF-01 | Genera OTP de 6 dígitos con SecureRandom, lo guarda en Redis (TTL 10 min) y publica evento en RabbitMQ. Llamado por el Registration Service tras crear el usuario. |
-| F02 | Verificar OTP y activar cuenta | RF-01 | Valida el OTP (máx. 3 intentos). Si es correcto, activa la cuenta en User Service y retorna JWT + refresh token. |
-| F03 | Reenviar OTP | RF-01 | Genera y publica un nuevo OTP. Usar cuando el anterior expiró (10 min) o se agotaron los 3 intentos. |
-| F04 | Login | RF-03 | Autentica con email y contraseña BCrypt. Bloquea la cuenta tras 5 intentos fallidos (~30 min en Redis). Retorna JWT (15 min) + refresh token (7 días). |
-| F05 | Renovar access token | RF-03 | Intercambia un refresh token válido por un nuevo par JWT/refresh token (rotación). El refresh token anterior se invalida. |
-| F06 | Logout | RF-03 | Requiere Bearer JWT. Extrae `userId` del token y elimina el refresh token de Redis, cerrando la sesión. |
-| F07 | Olvidé mi contraseña | RF-07 | Busca el usuario en User Service por email y publica evento de código de recuperación de 6 dígitos en RabbitMQ (TTL 10 min). |
-| F08 | Restablecer contraseña | RF-07 | Valida el código de recuperación de uso único, hashea la nueva contraseña con BCrypt y la actualiza en User Service via Feign. |
-| F09 | Cambiar contraseña (autenticado) | RF-09 | Requiere Bearer JWT. Verifica la contraseña actual contra el hash en User Service, luego actualiza con la nueva contraseña hasheada. |
+| F01 | RF-01 | **Inicializar verificación OTP** | Genera OTP de 6 dígitos con SecureRandom, lo guarda en Redis (TTL 10 min) y publica evento en RabbitMQ. |
+| F02 | RF-01 | **Verificar OTP y activar cuenta** | Valida el OTP (máx. 3 intentos). Si es correcto, activa la cuenta en User Service y retorna JWT + refresh token. |
+| F03 | RF-01 | **Reenviar OTP** | Genera y publica un nuevo OTP cuando el anterior expiró o se agotaron los 3 intentos. |
+| F04 | RF-03 | **Login** | Autentica con email y contraseña BCrypt. Bloquea la cuenta tras 5 intentos fallidos. Retorna JWT (15 min) + refresh token (7 días). |
+| F05 | RF-03 | **Renovar access token** | Intercambia un refresh token válido por un nuevo par JWT/refresh token (rotación). El anterior se invalida. |
+| F06 | RF-03 | **Logout** | Requiere Bearer JWT. Extrae `userId` del token y elimina el refresh token de Redis. |
+| F07 | RF-07 | **Olvidé mi contraseña** | Busca el usuario en User Service por email y publica evento de código de recuperación (TTL 10 min). |
+| F08 | RF-07 | **Restablecer contraseña** | Valida el código de recuperación de uso único, hashea la nueva contraseña con BCrypt y la actualiza en User Service. |
+| F09 | RF-09 | **Cambiar contraseña (autenticado)** | Requiere Bearer JWT. Verifica la contraseña actual y actualiza con la nueva contraseña hasheada. |
 
 ---
 
-## 9. Endpoints Expuestos
+## 9. Endpoints
 
 ### Resumen
 
@@ -320,25 +245,18 @@ Este módulo no persiste datos en una base de datos relacional ni documental. To
 
 ---
 
-### F01 — Inicializar Verificación OTP
+### POST /api/v1/auth/init-verification — Inicializar Verificación OTP
 
-**Endpoint:** `POST /api/v1/auth/init-verification`
+<div align="center">
+<img src="src/main/resources/INITVerificacion.png" alt="Init Verification" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `email` | `String` | body | Sí | Email institucional del usuario recién registrado |
-| `hashedPassword` | `String` | body | Sí | Contraseña ya hasheada con BCrypt (viene del Registration Service) |
-
-#### Ejemplo
-
+**Request:**
 ```
 POST /api/v1/auth/init-verification
 ```
 
 ```json
-// Request body
 {
   "email": "usuario@escuelaing.edu.co",
   "hashedPassword": "$2a$10$eXaMpLeHaSh..."
@@ -346,37 +264,25 @@ POST /api/v1/auth/init-verification
 ```
 
 ```json
-// Response
 { "message": "OTP sent to email" }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 400 | Campos faltantes o inválidos | `VALIDATION_ERROR` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 400 | Campos faltantes o inválidos | `"VALIDATION_ERROR"` |
 
 ---
 
-### F02 — Verificar OTP
+### POST /api/v1/auth/verify-otp — Verificar OTP
 
-**Endpoint:** `POST /api/v1/auth/verify-otp`
+<div align="center">
+<img src="src/main/resources/VerifyOTP.png" alt="Verify OTP" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `email` | `String` | body | Sí | Email institucional del usuario |
-| `otp` | `String` | body | Sí | Código OTP de 6 dígitos recibido por correo |
-
-#### Ejemplo
-
-```
-POST /api/v1/auth/verify-otp
-```
-
+**Request:**
 ```json
-// Request body
 {
   "email": "usuario@escuelaing.edu.co",
   "otp": "123456"
@@ -384,7 +290,6 @@ POST /api/v1/auth/verify-otp
 ```
 
 ```json
-// Response
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
@@ -392,68 +297,46 @@ POST /api/v1/auth/verify-otp
 }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 422 | OTP inválido, ya usado o expirado | `OTP_INVALID` / `OTP_EXPIRED` |
-| 429 | 3 intentos fallidos agotados | `OTP_MAX_ATTEMPTS` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 422 | OTP inválido, ya usado o expirado | `"OTP_INVALID"` / `"OTP_EXPIRED"` |
+| 429 | 3 intentos fallidos agotados | `"OTP_MAX_ATTEMPTS"` |
 
 ---
 
-### F03 — Reenviar OTP
+### POST /api/v1/auth/resend-otp — Reenviar OTP
 
-**Endpoint:** `POST /api/v1/auth/resend-otp`
+<div align="center">
+<img src="src/main/resources/ResendOTP.png" alt="Resend OTP" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `email` | `String` | body | Sí | Email institucional del usuario cuyo OTP expiró o se agotaron sus intentos |
-
-#### Ejemplo
-
-```
-POST /api/v1/auth/resend-otp
-```
-
+**Request:**
 ```json
-// Request body
 { "email": "usuario@escuelaing.edu.co" }
 ```
 
 ```json
-// Response
 { "message": "New OTP sent to email" }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 422 | No existe cuenta con ese email | `OTP_INVALID` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 422 | No existe cuenta con ese email | `"OTP_INVALID"` |
 
 ---
 
-### F04 — Login
+### POST /api/v1/auth/login — Login
 
-**Endpoint:** `POST /api/v1/auth/login`
+<div align="center">
+<img src="src/main/resources/Longin.png" alt="Login" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `email` | `String` | body | Sí | Email institucional del usuario |
-| `password` | `String` | body | Sí | Contraseña en texto plano (se compara con hash BCrypt en User Service) |
-
-#### Ejemplo
-
-```
-POST /api/v1/auth/login
-```
-
+**Request:**
 ```json
-// Request body
 {
   "email": "usuario@escuelaing.edu.co",
   "password": "MiContraseña123!"
@@ -461,7 +344,6 @@ POST /api/v1/auth/login
 ```
 
 ```json
-// Response
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
   "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
@@ -469,39 +351,28 @@ POST /api/v1/auth/login
 }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 401 | Contraseña incorrecta o usuario no encontrado | `INVALID_CREDENTIALS` |
-| 403 | Email no verificado (OTP pendiente) | `EMAIL_NOT_VERIFIED` |
-| 422 | Cuenta bloqueada por 5 intentos fallidos | `ACCOUNT_LOCKED` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 401 | Contraseña incorrecta o usuario no encontrado | `"INVALID_CREDENTIALS"` |
+| 403 | Email no verificado (OTP pendiente) | `"EMAIL_NOT_VERIFIED"` |
+| 422 | Cuenta bloqueada por 5 intentos fallidos | `"ACCOUNT_LOCKED"` |
 
 ---
 
-### F05 — Renovar Access Token (Rotación)
+### POST /api/v1/auth/refresh — Renovar Access Token
 
-**Endpoint:** `POST /api/v1/auth/refresh`
+<div align="center">
+<img src="src/main/resources/RefreshToken.png" alt="Refresh Token" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `refreshToken` | `String` | body | Sí | UUID del refresh token activo obtenido en login o verify-otp |
-
-#### Ejemplo
-
-```
-POST /api/v1/auth/refresh
-```
-
+**Request:**
 ```json
-// Request body
 { "refreshToken": "550e8400-e29b-41d4-a716-446655440000" }
 ```
 
 ```json
-// Response
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...(nuevo)...",
   "refreshToken": "661f9511-f3ac-52e5-b827-557766551111",
@@ -509,98 +380,69 @@ POST /api/v1/auth/refresh
 }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 401 | Refresh token inválido o expirado | `TOKEN_INVALID` / `TOKEN_EXPIRED` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 401 | Refresh token inválido o expirado | `"TOKEN_INVALID"` / `"TOKEN_EXPIRED"` |
 
 ---
 
-### F06 — Logout
+### POST /api/v1/auth/logout — Logout
 
-**Endpoint:** `POST /api/v1/auth/logout`
+<div align="center">
+<img src="src/main/resources/Logout.png" alt="Logout" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `Authorization` | `String` | header | Sí | Token JWT en formato `Bearer <accessToken>` |
-
-#### Ejemplo
-
+**Request:**
 ```
 POST /api/v1/auth/logout
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 ```json
-// Response
 { "message": "Session closed successfully" }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 401 | JWT ausente o inválido | `TOKEN_INVALID` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 401 | JWT ausente o inválido | `"TOKEN_INVALID"` |
 
 ---
 
-### F07 — Olvidé Mi Contraseña
+### POST /api/v1/auth/forgot-password — Olvidé Mi Contraseña
 
-**Endpoint:** `POST /api/v1/auth/forgot-password`
+<div align="center">
+<img src="src/main/resources/ForgotPassword.png" alt="Forgot Password" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `email` | `String` | body | Sí | Email institucional de la cuenta a recuperar |
-
-#### Ejemplo
-
-```
-POST /api/v1/auth/forgot-password
-```
-
+**Request:**
 ```json
-// Request body
 { "email": "usuario@escuelaing.edu.co" }
 ```
 
 ```json
-// Response
 { "message": "Recovery code sent to email" }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 422 | No existe cuenta con ese email | `OTP_INVALID` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 422 | No existe cuenta con ese email | `"OTP_INVALID"` |
 
 ---
 
-### F08 — Restablecer Contraseña
+### POST /api/v1/auth/reset-password — Restablecer Contraseña
 
-**Endpoint:** `POST /api/v1/auth/reset-password`
+<div align="center">
+<img src="src/main/resources/ResetPassword.png" alt="Reset Password" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `email` | `String` | body | Sí | Email institucional de la cuenta |
-| `otp` | `String` | body | Sí | Código de recuperación de 6 dígitos recibido por correo |
-| `newPassword` | `String` | body | Sí | Nueva contraseña (se hasheará con BCrypt antes de guardar) |
-
-#### Ejemplo
-
-```
-POST /api/v1/auth/reset-password
-```
-
+**Request:**
 ```json
-// Request body
 {
   "email": "usuario@escuelaing.edu.co",
   "otp": "654321",
@@ -609,39 +451,30 @@ POST /api/v1/auth/reset-password
 ```
 
 ```json
-// Response
 { "message": "Password updated successfully" }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 422 | Código inválido, ya usado o expirado | `OTP_INVALID` / `OTP_EXPIRED` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 422 | Código inválido, ya usado o expirado | `"OTP_INVALID"` / `"OTP_EXPIRED"` |
 
 ---
 
-### F09 — Cambiar Contraseña (Autenticado)
+### POST /api/v1/auth/change-password — Cambiar Contraseña
 
-**Endpoint:** `POST /api/v1/auth/change-password`
+<div align="center">
+<img src="src/main/resources/ChangePassword.png" alt="Change Password" width="700"/>
+</div>
 
-#### Request
-
-| Campo | Tipo | Origen | Obligatorio | Descripción |
-|---|---|---|---|---|
-| `Authorization` | `String` | header | Sí | Token JWT en formato `Bearer <accessToken>` |
-| `currentPassword` | `String` | body | Sí | Contraseña actual del usuario para verificación |
-| `newPassword` | `String` | body | Sí | Nueva contraseña a establecer |
-
-#### Ejemplo
-
+**Request:**
 ```
 POST /api/v1/auth/change-password
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 ```json
-// Request body
 {
   "currentPassword": "ContraActual123!",
   "newPassword": "ContraNueva456!"
@@ -649,15 +482,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 ```json
-// Response
 { "message": "Password changed successfully" }
 ```
 
-#### Errores manejados
+**Errores:**
 
-| Código HTTP | Escenario | Código de error |
-|---|---|---|
-| 401 | Contraseña actual incorrecta o JWT inválido | `INVALID_CREDENTIALS` / `TOKEN_INVALID` |
+| HTTP | Escenario | Mensaje |
+|:---:|---|---|
+| 401 | Contraseña actual incorrecta o JWT inválido | `"INVALID_CREDENTIALS"` / `"TOKEN_INVALID"` |
 
 ---
 
@@ -684,11 +516,11 @@ Este módulo **no consume** colas. Solo publica eventos. El servicio de notifica
 
 ### Comportamiento ante fallo de RabbitMQ
 
-Si RabbitMQ no está disponible, `EmailSenderAdapter` captura la excepción y loguea el OTP/código en consola (`INFO`). El flujo de negocio **no se interrumpe** — el usuario puede obtener el código de los logs del servidor en desarrollo.
+Si RabbitMQ no está disponible, `EmailSenderAdapter` captura la excepción y loguea el OTP/código en consola (`INFO`). El flujo de negocio **no se interrumpe**.
 
 ---
 
-## 11. Evidencia de Pruebas Unitarias
+## 11. Evidencia de Pruebas
 
 ### Clases de prueba implementadas
 
@@ -724,19 +556,25 @@ src/test/java/edu/eci/patricia/DOSW_patricia/
 ### Cómo ejecutar las pruebas
 
 ```bash
-# Ejecutar todas las pruebas (requiere Redis en localhost:6379)
+# Pruebas unitarias
 ./mvnw test
 
-# Ejecutar una prueba específica
-./mvnw test -Dtest=LoginUseCaseTest
-
-# Ejecutar todas las pruebas + reporte JaCoCo + verificar cobertura ≥ 80%
+# Todas las pruebas + reporte JaCoCo
 ./mvnw verify
+
+# Reporte de cobertura
+./mvnw clean test jacoco:report
+# → target/site/jacoco/index.html
+
+# Prueba específica
+./mvnw test -Dtest=LoginUseCaseTest
+./mvnw test -Dtest=ValidateOtpUseCaseTest
+./mvnw test -Dtest=RefreshTokenUseCaseTest
 ```
 
 ---
 
-## 12. Evidencia de Análisis de Cobertura
+## 12. Evidencia de Cobertura
 
 Cobertura mínima esperada > 80%.
 
@@ -744,107 +582,85 @@ Cobertura mínima esperada > 80%.
 <img src="src/main/resources/jacoco.png" alt="Reporte de cobertura JaCoCo" width="700"/>
 </div>
 
-### Métricas objetivo
-
-| Métrica | Objetivo | Obtenido |
-|---|---|---|
-| Cobertura de instrucciones | ≥ 80% | 97% |
-| Cobertura de ramas | ≥ 60% | 93% |
-| Clases cubiertas | — | 29 de 29 |
-
 ---
 
-## 13. Cómo Ejecutar el Proyecto
+## 13. Cómo Ejecutar
 
 ### Prerrequisitos
 
 - Java 21
 - Maven 3.9+
-- Docker & Docker Compose
-- Una instancia de Redis accesible
-- RabbitMQ / CloudAMQP (opcional en local — si no hay, el OTP aparece en los logs)
-- URL del User Service (M02) configurada
+- Docker & Docker Compose (solo para modo Docker)
 
-### Modos de ejecución
-
-| Modo | Comando | Cache | Puerto | Swagger |
-|---|---|---|---|---|
-| Local (perfil dev) | `./mvnw spring-boot:run` | Redis en `localhost:6379` | 8080 | `http://localhost:8080/swagger-ui.html` |
-| Docker Compose | `docker compose up --build` | Redis + RabbitMQ en contenedores | 9090 | `http://localhost:9090/swagger-ui.html` |
-
-### Opción 1 — Ejecución local
+### Opción 1: Local con Maven (perfil `dev`, sin Docker)
 
 ```bash
-# 1. Clonar el repositorio
+# Clonar repositorio
 git clone https://github.com/PATRICI-A/snorlax-energy-auth-service.git
 cd snorlax-energy-auth-service
 
-# 2. Levantar Redis localmente (si no lo tienes)
+# Levantar Redis localmente (requerido)
 docker run -d -p 6379:6379 redis:7-alpine
 
-# 3. Ejecutar (perfil dev activo por defecto)
+# Ejecutar
 ./mvnw spring-boot:run
 ```
 
-La API queda disponible en `http://localhost:8080`.
-Swagger UI disponible en `http://localhost:8080/swagger-ui.html` (también en la raíz `/`).
+**URL:** `http://localhost:8080`  
+**Swagger UI:** `http://localhost:8080/swagger-ui.html`
 
-### Opción 2 — Docker Compose (recomendado)
+### Opción 2: Docker Compose (Redis + RabbitMQ)
 
 ```bash
-# Levanta auth-service + Redis + RabbitMQ + SonarQube
 docker compose up --build
-
-# Solo auth-service + Redis (más liviano para desarrollo)
-docker compose up auth-service redis
-
-# Ver logs en tiempo real
-docker compose logs -f auth-service
-
-# Detener y eliminar volúmenes
-docker compose down -v
 ```
 
-### Variables de entorno
+### Variables de Entorno
 
-| Variable | Valor por defecto (dev) | Descripción |
+| Variable | Valor por defecto | Descripción |
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE` | `dev` | Perfil activo de Spring Boot |
-| `JWT_SECRET` | `dev-secret-key-must-be-at-least-32-characters` | Clave HMAC-SHA256 compartida con todos los módulos (mín. 32 chars) |
-| `JWT_EXPIRATION` | `900000` | Duración del access token en milisegundos (15 min) |
+| `JWT_SECRET` | `dev-secret-key-must-be-at-least-32-characters` | Clave HMAC-SHA256 (mín. 32 chars) |
+| `JWT_EXPIRATION` | `900000` | Duración del access token en ms (15 min) |
 | `REDIS_HOST` | `localhost` | Host de Redis |
 | `REDIS_PORT` | `6379` | Puerto de Redis |
-| `REDIS_PASSWORD` | _(vacío)_ | Contraseña de Redis (usar con Upstash/Azure Redis en producción) |
-| `REDIS_SSL` | `false` | Activar TLS para Redis (`true` en producción) |
+| `REDIS_PASSWORD` | _(vacío)_ | Contraseña de Redis |
+| `REDIS_SSL` | `false` | Activar TLS para Redis |
 | `RABBITMQ_HOST` | `woodpecker.rmq.cloudamqp.com` | Host de CloudAMQP |
 | `RABBITMQ_PORT` | `5671` | Puerto AMQP con SSL |
 | `RABBITMQ_USERNAME` | `thjdybjd` | Usuario CloudAMQP |
 | `RABBITMQ_PASSWORD` | _(secreto)_ | Contraseña CloudAMQP |
 | `RABBITMQ_VIRTUAL_HOST` | `thjdybjd` | Virtual host CloudAMQP |
-| `RABBITMQ_SSL` | `true` | TLS para RabbitMQ (`true` con CloudAMQP) |
+| `RABBITMQ_SSL` | `true` | TLS para RabbitMQ |
 | `USER_SERVICE_URL` | `http://localhost:8081` | URL base del User Service (M02) |
-| `PORT` | `8080` | Puerto del servidor (Azure usa este valor via `server.port`) |
-| `SERVER_URL` | `http://localhost:8080` | URL base mostrada en Swagger servers |
+| `PORT` | `8080` | Puerto del servidor |
 
 ---
 
-## 14. Evidencia del Despliegue CI/CD
+## 14. Evidencia CI/CD
 
 El pipeline `.github/workflows/ci.yml` corre en cada push a `main` o `develop`:
 
 <div align="center">
-<img src="src/main/resources/evidencia despligue.png" alt="Evidencia de despliegue GitHub Actions" width="700"/>
+<img src="src/main/resources/evidencia despligue.png" alt="Pipeline CI GitHub Actions" width="700"/>
 </div>
 
-El pipeline `.github/workflows/cd.yml` despliega automáticamente a Azure tras CI exitoso en `main`:
+El pipeline `.github/workflows/cd.yml` se activa automáticamente cuando CI completa exitosamente en `main`:
 
 <div align="center">
-<img src="src/main/resources/despliegue.png" alt="Despliegue en Azure App Service" width="700"/>
+<img src="src/main/resources/despliegue.png" alt="Pipeline CD — Despliegue en Azure" width="700"/>
 </div>
+
+1. **Checkout** — `actions/checkout@v4`
+2. **Java 21** — `actions/setup-java@v4` (Temurin)
+3. **Cache Maven** — dependencias cacheadas para acelerar el build
+4. **Build & Test** — `mvn clean verify -B` con Redis service container
+5. **Upload JaCoCo** — artefacto `jacoco-report` (retención 14 días)
+6. **Deploy JAR** — `azure/webapps-deploy@v3` hacia Azure App Service
 
 ---
 
-## 15. Link Swagger Desplegado
+## 15. Link Swagger
 
 | Ambiente | URL |
 |---|---|
@@ -853,23 +669,23 @@ El pipeline `.github/workflows/cd.yml` despliega automáticamente a Azure tras C
 | **Docker Compose** | `http://localhost:9090/swagger-ui.html` |
 | **OpenAPI JSON** | `https://patricia-etfgcpfsb5g2aqby.canadacentral-01.azurewebsites.net/v3/api-docs` |
 
+> Usar **Bearer JWT** en el botón "Authorize" de Swagger UI para probar endpoints protegidos.
+
 ---
 
 ## 16. Estructura del Código
 
 ```
 snorlax-energy-auth-service/
-│
 ├── src/
 │   ├── main/
 │   │   ├── java/edu/eci/patricia/DOSW_patricia/
-│   │   │   │
 │   │   │   ├── domain/                              # CAPA DE DOMINIO
 │   │   │   │   ├── model/
-│   │   │   │   │   ├── User.java                    # Entidad de usuario (verified, lockout, otp)
-│   │   │   │   │   └── RefreshToken.java            # Entidad de sesión JWT
+│   │   │   │   │   ├── User.java
+│   │   │   │   │   └── RefreshToken.java
 │   │   │   │   ├── ports/
-│   │   │   │   │   ├── in/                          # Puertos de entrada (contratos de use cases)
+│   │   │   │   │   ├── in/
 │   │   │   │   │   │   ├── LoginPort.java
 │   │   │   │   │   │   ├── InitVerificationPort.java
 │   │   │   │   │   │   ├── ValidateOtpPort.java
@@ -879,11 +695,11 @@ snorlax-energy-auth-service/
 │   │   │   │   │   │   ├── ForgotPasswordPort.java
 │   │   │   │   │   │   ├── ResetPasswordPort.java
 │   │   │   │   │   │   └── ChangePasswordPort.java
-│   │   │   │   │   └── out/                         # Puertos de salida (contratos de infraestructura)
+│   │   │   │   │   └── out/
 │   │   │   │   │       ├── UserServicePort.java
 │   │   │   │   │       ├── EmailSenderPort.java
 │   │   │   │   │       └── RefreshTokenRepositoryPort.java
-│   │   │   │   ├── exceptions/                      # Excepciones de dominio tipadas
+│   │   │   │   ├── exceptions/
 │   │   │   │   │   ├── CuentaBloqueadaException.java
 │   │   │   │   │   ├── EmailNotVerifiedException.java
 │   │   │   │   │   ├── InvalidCredentialsException.java
@@ -894,7 +710,7 @@ snorlax-energy-auth-service/
 │   │   │   │   │   ├── TokenExpiredException.java
 │   │   │   │   │   ├── TokenInvalidException.java
 │   │   │   │   │   └── UserAlreadyExistsException.java
-│   │   │   │   └── valueobjects/                    # Value Objects con validación integrada
+│   │   │   │   └── valueobjects/
 │   │   │   │       ├── Email.java
 │   │   │   │       ├── OtpCode.java
 │   │   │   │       ├── OtpEmbedded.java
@@ -906,7 +722,7 @@ snorlax-energy-auth-service/
 │   │   │   │       └── ProfileVisibility.java
 │   │   │   │
 │   │   │   ├── application/                         # CAPA DE APLICACIÓN
-│   │   │   │   ├── usecase/                         # Implementaciones de puertos de entrada
+│   │   │   │   ├── usecase/
 │   │   │   │   │   ├── LoginUseCase.java
 │   │   │   │   │   ├── InitVerificationUseCase.java
 │   │   │   │   │   ├── ValidateOtpUseCase.java
@@ -917,34 +733,34 @@ snorlax-energy-auth-service/
 │   │   │   │   │   ├── ResetPasswordUseCase.java
 │   │   │   │   │   └── ChangePasswordUseCase.java
 │   │   │   │   └── dto/
-│   │   │   │       ├── request/                     # DTOs de entrada de la capa de aplicación
-│   │   │   │       ├── response/                    # LoginResponseDto, RegisterResponseDto
+│   │   │   │       ├── request/
+│   │   │   │       ├── response/
 │   │   │   │       └── external/
-│   │   │   │           └── UserDto.java             # Record DTO del User Service
+│   │   │   │           └── UserDto.java
 │   │   │   │
 │   │   │   ├── infrastructure/                      # CAPA DE INFRAESTRUCTURA
 │   │   │   │   ├── adapters/
-│   │   │   │   │   ├── adapter/                     # Adaptadores de puertos de salida
+│   │   │   │   │   ├── adapter/
 │   │   │   │   │   │   ├── UserServiceFeignAdapter.java
 │   │   │   │   │   │   └── RefreshTokenRepositoryAdapter.java
 │   │   │   │   │   └── cache/
-│   │   │   │   │       ├── entity/                  # Entidades @RedisHash
+│   │   │   │   │       ├── entity/
 │   │   │   │   │       │   ├── OtpCache.java              # TTL 600 s
 │   │   │   │   │       │   ├── PasswordResetOtpCache.java # TTL 600 s
 │   │   │   │   │       │   ├── LockoutCache.java
 │   │   │   │   │       │   └── RefreshTokenCache.java     # TTL 7 días
-│   │   │   │   │       └── repository/              # Spring Data Redis repositories
+│   │   │   │   │       └── repository/
 │   │   │   │   │           ├── OtpRedisRepository.java
 │   │   │   │   │           ├── PasswordResetOtpRedisRepository.java
 │   │   │   │   │           ├── LockoutRedisRepository.java
 │   │   │   │   │           └── RefreshTokenRedisRepository.java
 │   │   │   │   ├── config/
-│   │   │   │   │   ├── SecurityConfig.java          # Stateless, BCrypt, CORS, rutas públicas
-│   │   │   │   │   └── RabbitMQConfig.java          # TopicExchange, RabbitTemplate, RabbitAdmin
+│   │   │   │   │   ├── SecurityConfig.java
+│   │   │   │   │   └── RabbitMQConfig.java
 │   │   │   │   └── external/
-│   │   │   │       ├── JwtService.java              # Generación y validación HMAC-SHA256
-│   │   │   │       ├── EmailSenderAdapter.java      # Publica eventos en RabbitMQ
-│   │   │   │       ├── UserServiceFeignClient.java  # @FeignClient al User Service
+│   │   │   │       ├── JwtService.java
+│   │   │   │       ├── EmailSenderAdapter.java
+│   │   │   │       ├── UserServiceFeignClient.java
 │   │   │   │       └── dto/
 │   │   │   │           ├── OtpVerificationEventDto.java
 │   │   │   │           └── PasswordResetEventDto.java
@@ -952,26 +768,33 @@ snorlax-energy-auth-service/
 │   │   │   ├── entrypoints/                         # CAPA DE ENTRADA
 │   │   │   │   ├── rest/
 │   │   │   │   │   ├── controller/
-│   │   │   │   │   │   └── AuthController.java      # 9 endpoints POST /api/v1/auth/**
+│   │   │   │   │   │   └── AuthController.java
 │   │   │   │   │   ├── mapper/
-│   │   │   │   │   │   └── AuthRestMapper.java      # MapStruct: Request → DTO de aplicación
-│   │   │   │   │   └── request/                     # Request bodies con validación @Valid
+│   │   │   │   │   │   └── AuthRestMapper.java
+│   │   │   │   │   └── request/
 │   │   │   │   └── advice/
-│   │   │   │       ├── GlobalExceptionHandler.java  # @RestControllerAdvice (10+ excepciones)
-│   │   │   │       └── ErrorResponse.java           # DTO de error estándar {code, message, detail}
+│   │   │   │       ├── GlobalExceptionHandler.java
+│   │   │   │       └── ErrorResponse.java
 │   │   │   │
-│   │   │   └── DoswPatriciaApplication.java         # Main — @SpringBootApplication @EnableFeignClients
+│   │   │   └── DoswPatriciaApplication.java
 │   │   │
 │   │   └── resources/
 │   │       ├── application.yml
 │   │       ├── application-dev.yml
 │   │       ├── DiagramaClases.png
-│   │       ├── componentes especificos.png
 │   │       ├── componetes generales.png
 │   │       ├── despliegue.png
 │   │       ├── evidencia despligue.png
 │   │       ├── jacoco.png
-│   │       └── unitarias.png
+│   │       ├── INITVerificacion.png
+│   │       ├── VerifyOTP.png
+│   │       ├── ResendOTP.png
+│   │       ├── Longin.png
+│   │       ├── RefreshToken.png
+│   │       ├── Logout.png
+│   │       ├── ForgotPassword.png
+│   │       ├── ResetPassword.png
+│   │       └── ChangePassword.png
 │   │
 │   └── test/
 │       └── java/edu/eci/patricia/DOSW_patricia/
@@ -999,12 +822,21 @@ snorlax-energy-auth-service/
 
 Todos los endpoints del `AuthController` están documentados con anotaciones OpenAPI:
 
-- `@Tag(name = "Authentication", description = "...")` — categoría del controlador en Swagger UI
-- `@Operation(summary = "...", description = "...")` — propósito y comportamiento de cada endpoint
-- `@ApiResponses({@ApiResponse(responseCode = "...", description = "...")})` — todos los códigos de respuesta posibles
-- `@SecurityRequirement(name = "bearerAuth")` — marca los endpoints que requieren JWT Bearer (`/logout`, `/change-password`)
+```java
+/**
+ * Valida el OTP recibido por correo. Máximo 3 intentos.
+ * Si es correcto activa la cuenta en User Service y retorna JWT + refresh token.
+ * MAX_ATTEMPTS = 3
+ */
+public AuthResponse validateOtp(ValidateOtpCommand command) { ... }
 
-Los use cases documentan únicamente lógica no obvia mediante comentarios en línea (constantes de negocio: `MAX_FAILED_ATTEMPTS = 5`, `MAX_ATTEMPTS = 3`). El `Dockerfile`, `pom.xml` y `docker-compose.yml` contienen comentarios explicando decisiones de infraestructura (multi-stage build, caché de capas Docker, exclusiones de JaCoCo).
+/**
+ * Autentica al usuario con email y contraseña BCrypt.
+ * Bloquea la cuenta tras MAX_FAILED_ATTEMPTS = 5 intentos fallidos (~30 min en Redis).
+ * Retorna JWT (15 min) + refresh token (7 días).
+ */
+public AuthResponse login(LoginCommand command) { ... }
+```
 
 Acceso a la documentación interactiva:
 - **Swagger UI:** `/swagger-ui.html`
@@ -1012,15 +844,17 @@ Acceso a la documentación interactiva:
 
 ---
 
-## 18. Conexiones con Servicios Externos
+## 18. Conexiones Externas
 
-| Servicio | Tipo | Configuración | Propósito | Manejo de fallo |
-|---|---|---|---|---|
-| **Redis** | Caché en memoria | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_SSL` | OTPs (TTL 10 min), refresh tokens (TTL 7 días), bloqueos de cuenta | Sin Redis el servicio no arranca |
-| **RabbitMQ (CloudAMQP)** | Broker AMQP | `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USERNAME`, `RABBITMQ_PASSWORD`, `RABBITMQ_SSL` | Publicación de eventos `auth.otp.verification` y `auth.password.reset` | `EmailSenderAdapter` loguea el código en consola — el flujo no se interrumpe |
-| **User Service (M02)** | HTTP REST via OpenFeign | `USER_SERVICE_URL` | Buscar usuario por email/id, marcar como verificado, actualizar contraseña | `GlobalExceptionHandler` captura `FeignException`: `404` → 404, otros → 503 |
-| **SonarCloud** | Análisis estático | `SONAR_TOKEN` (GitHub secret) | Cobertura y calidad de código en pipeline `sonar.yml` | Solo afecta el pipeline de QA, no la ejecución del servicio |
-| **Azure App Service** | Cloud hosting | `AZURE_CREDENTIALS`, `AZURE_APP_SERVICE_NAME` (GitHub secrets) | Despliegue del JAR en producción via `azure/webapps-deploy@v3` | El pipeline CD falla y notifica; no hay impacto en el servicio ya desplegado |
+| Módulo | Tipo | Dirección | Detalle |
+|---|---|---|---|
+| **M02 — User Service** | HTTP REST via OpenFeign | M01 → M02 | `UserServiceFeignClient` consulta y actualiza usuarios en M02 (`/api/v1/internal/users/*`). `FeignException` 404 → 404, otros → 503. |
+| **Notificaciones** | RabbitMQ (publicación) | M01 → RabbitMQ | `EmailSenderAdapter` publica `OtpVerificationEventDto` y `PasswordResetEventDto` en `auth.exchange`. Si RabbitMQ falla → loguea en consola, flujo no se interrumpe. |
+| **Redis** | Spring Data Redis | M01 → Redis | OTPs (TTL 10 min), refresh tokens (TTL 7 días), bloqueos de cuenta. Sin Redis el servicio no arranca. |
+| **SonarCloud** | Análisis estático | GitHub Actions | `SONAR_TOKEN` en pipeline `sonar.yml`. Solo afecta QA, no la ejecución del servicio. |
+| **Azure App Service** | Cloud hosting | CD pipeline | `azure/webapps-deploy@v3` con `AZURE_CREDENTIALS` y `AZURE_APP_SERVICE_NAME`. |
+
+**M01 no consume eventos de otros módulos.** Solo publica.
 
 ---
 
@@ -1028,48 +862,16 @@ Acceso a la documentación interactiva:
 
 Perfil: **`dev`** — Redis local, sin PostgreSQL ni Docker requerido.
 
-### Pasos del pipeline CI (`.github/workflows/ci.yml`)
+```bash
+# Levantar en modo desarrollo
+./mvnw spring-boot:run
 
-| Paso | Acción | Descripción |
-|---|---|---|
-| 1 | Checkout | `actions/checkout@v4` con `fetch-depth: 0` |
-| 2 | Setup JDK 21 | `actions/setup-java@v4` distribución Temurin, caché Maven |
-| 3 | Redis service | Contenedor `redis:7-alpine` con healthcheck `redis-cli ping` |
-| 4 | Build & Test | `mvn clean verify -B` — compila, tests, JaCoCo. Falla si cobertura < 80% |
-| 5 | Upload JaCoCo | Artefacto `jacoco-report` (retención 14 días) |
-| 6 | Upload Surefire | Artefacto `surefire-reports` (retención 14 días) |
-| 7 | Upload JAR | Artefacto `auth-service-jar` (retención 14 días) |
+# Ejecutar pruebas
+./mvnw test
 
-```yaml
-name: CI – Build & Test
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-    types: [opened, synchronize, reopened]
-
-jobs:
-  build-test:
-    runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports: ['6379:6379']
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/setup-java@v4
-        with: { java-version: '21', distribution: temurin, cache: maven }
-      - run: mvn clean verify -B
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
-          REDIS_HOST: localhost
-          USER_SERVICE_URL: 'http://localhost:8099'
-          SPRING_PROFILES_ACTIVE: dev
+# Reporte de cobertura
+./mvnw clean test jacoco:report
+# → target/site/jacoco/index.html
 ```
 
 **No requiere:** PostgreSQL, Docker, Kafka.
@@ -1078,65 +880,40 @@ jobs:
 
 ## 20. Pipeline de Producción
 
-Perfil: **`docker`** — Redis + RabbitMQ en contenedores. El pipeline `.github/workflows/cd.yml` se activa automáticamente cuando CI completa exitosamente en `main`.
+Perfil: **`docker`** — Redis + RabbitMQ en contenedores.
 
-### Pasos del pipeline CD
+```bash
+# Build y levantamiento completo
+docker compose up --build
 
-| Paso | Acción | Descripción |
-|---|---|---|
-| 1 | Checkout | `actions/checkout@v4` |
-| 2 | Setup JDK 21 | `actions/setup-java@v4` con caché Maven |
-| 3 | Build JAR | `mvn package -DskipTests -B` |
-| 4 | Azure Login | `azure/login@v2` usando `AZURE_CREDENTIALS` |
-| 5 | Deploy JAR | `azure/webapps-deploy@v3` — despliega en App Service |
-| 6 | Show URL | Loguea la URL de la API y Swagger desplegados |
+# Solo auth-service + Redis
+docker compose up auth-service redis
 
-```yaml
-name: CD – Deploy to Azure
-on:
-  workflow_run:
-    workflows: ["CI – Build & Test"]
-    branches: [main]
-    types: [completed]
+# Ver logs
+docker compose logs -f auth-service
 
-jobs:
-  deploy-to-azure:
-    runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
-    steps:
-      - uses: actions/checkout@v4
-      - run: mvn package -DskipTests -B
-      - uses: azure/login@v2
-        with: { creds: ${{ secrets.AZURE_CREDENTIALS }} }
-      - uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_APP_SERVICE_NAME }}
-          package: target/auth-service-*.jar
+# Estado de contenedores
+docker compose ps
 ```
 
-**Secrets requeridos en GitHub:**
+**Servicios en `docker-compose.yml`:**
 
-| Secret | Descripción |
-|---|---|
-| `AZURE_CREDENTIALS` | JSON del Service Principal |
-| `AZURE_APP_SERVICE_NAME` | Nombre del App Service en Azure |
-| `JWT_SECRET_TEST` | Clave JWT para el entorno de CI (≥ 32 caracteres) |
-| `SONAR_TOKEN` | Token de autenticación de SonarCloud |
-
-### Captura — Pipeline de producción
-
-<div align="center">
-<img src="src/main/resources/despliegue.png" alt="Pipeline de producción exitoso" width="700"/>
-</div>
+| Servicio | Imagen | Puerto |
+|---|---|---|
+| `auth-service` | Build local | `9090:9090` |
+| `redis` | `redis:7-alpine` | `6379:6379` |
+| `rabbitmq` | `rabbitmq:3-management-alpine` | `5672:5672`, `15672:15672` |
+| `sonarqube` | `sonarqube:community` | `9000:9000` |
+| `sonar-db` | `postgres:16` | interno |
 
 ---
 
 ## 21. Dockerizado
 
-### Dockerfile (Multi-stage Build)
+### Dockerfile (multi-etapa)
 
 ```dockerfile
-# ── Stage 1: Build ────────────────────────────────────────────────────────────
+# Etapa 1: Build
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 COPY pom.xml .
@@ -1144,7 +921,7 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn package -DskipTests -B
 
-# ── Stage 2: Runtime ──────────────────────────────────────────────────────────
+# Etapa 2: Runtime (imagen mínima)
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
@@ -1155,43 +932,35 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
-### Docker Compose
-
-| Servicio | Imagen | Puertos | Descripción |
-|---|---|---|---|
-| `auth-service` | Build local | `9090:9090` | El microservicio de autenticación |
-| `redis` | `redis:7-alpine` | `6379:6379` | Caché de sesiones, OTPs y bloqueos |
-| `rabbitmq` | `rabbitmq:3-management-alpine` | `5672:5672`, `15672:15672` | Broker de mensajería (UI en :15672) |
-| `sonarqube` | `sonarqube:community` | `9000:9000` | Análisis de calidad local |
-| `sonar-db` | `postgres:16` | interno | BD de SonarQube |
+### Comandos Docker
 
 ```bash
-# Levantar todos los servicios
+# Primera vez
 docker compose up --build
 
-# Solo auth-service + Redis
-docker compose up auth-service redis
+# Sin rebuild
+docker compose up
 
-# Ver logs en tiempo real
-docker compose logs -f auth-service
+# Detener y eliminar contenedores
+docker compose down
 
-# Detener y eliminar volúmenes
+# Eliminar también los volúmenes
 docker compose down -v
 ```
 
 ---
 
-## 22. Estrategia de Versionamiento
+## 22. Versionamiento
 
 ### Estrategia de Ramas (Git Flow)
 
 | Rama | Propósito | Reglas |
 |---|---|---|
-| `main` | Versión estable lista para producción | Recibe merges desde `feature/*` o `develop`. Cada merge exitoso activa el pipeline CD hacia Azure. Protegida con PR obligatorio. |
-| `develop` | Integración continua de trabajo | Recibe merges desde `feature/*`. Activa el pipeline CI. |
-| `feature/*` | Desarrollo de funcionalidades | Base: `develop`. Se fusiona a `develop` mediante PR revisado. |
+| `main` | Versión estable para producción | Solo merges desde `feature/*` o `develop`. PR obligatorio + CI verde. Activa pipeline CD. |
+| `develop` | Integración continua | Recibe merges desde `feature/*`. Activa el pipeline CI. |
+| `feature/*` | Desarrollo de funcionalidad | Base: `develop`. Se fusiona con PR. |
 
-### Convenciones de ramas
+### Convenciones de Ramas
 
 ```
 feature/[nombre-funcionalidad]
@@ -1199,7 +968,7 @@ hotfix/[descripcion-del-fix]
 release/[version]
 ```
 
-### Convenciones de commits
+### Convenciones de Commits
 
 ```
 [tipo]: [descripción específica de la acción]
@@ -1210,15 +979,15 @@ release/[version]
 | `feat` | Nueva funcionalidad |
 | `fix` | Corrección de errores |
 | `docs` | Cambios en documentación |
-| `refactor` | Refactorización sin cambio de comportamiento |
-| `test` | Adición o modificación de pruebas |
-| `chore` | Cambios de configuración, build o dependencias |
+| `test` | Agregar o modificar pruebas |
+| `refactor` | Refactorización sin cambio de funcionalidad |
+| `chore` | Cambios de configuración, dependencias |
 
 ---
 
 <div align="center">
 
-### Equipo Snorlax Energy
+### Equipo **Snorlax Energy**
 
 ![Module](https://img.shields.io/badge/Module-M01_Auth_Service-orange?style=for-the-badge)
 ![Course](https://img.shields.io/badge/Course-DOSW-orange?style=for-the-badge)
