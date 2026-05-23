@@ -1,10 +1,8 @@
 package edu.eci.patricia.DOSW_patricia.entrypoints.rest.mapper;
 
-import edu.eci.patricia.DOSW_patricia.application.dto.request.InitVerificationRequestDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.request.LoginRequestDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.request.ResetPasswordRequestDto;
 import edu.eci.patricia.DOSW_patricia.application.dto.request.ValidateOtpRequestDto;
-import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.InitVerificationRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.LoginRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ResetPasswordRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ValidateOtpRequest;
@@ -16,14 +14,6 @@ import org.mapstruct.Mapping;
  */
 @Mapper(componentModel = "spring")
 public interface AuthRestMapper {
-
-    /**
-     * Converts an init-verification REST request to its application DTO.
-     *
-     * @param request the REST request
-     * @return the application DTO
-     */
-    InitVerificationRequestDto toInitVerificationDto(InitVerificationRequest request);
 
     /**
      * Converts a validate-OTP REST request to its application DTO.

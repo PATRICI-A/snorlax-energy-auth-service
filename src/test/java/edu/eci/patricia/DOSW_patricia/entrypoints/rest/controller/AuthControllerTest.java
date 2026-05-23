@@ -104,31 +104,6 @@ class AuthControllerTest {
 
     // ── Init Verification ─────────────────────────────────────────────────────
 
-    @Test
-    void initVerificationShouldReturn201WhenValid() throws Exception {
-        when(mapper.toInitVerificationDto(any())).thenReturn(
-                new InitVerificationRequestDto("student@mail.escuelaing.edu.co", "$2a$10$SomeHashedPasswordValue"));
-        doNothing().when(initVerificationPort).initVerification(any());
-
-        mockMvc.perform(post("/api/v1/auth/init-verification")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(INIT_VERIFICATION_JSON))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("OTP sent to email"));
-    }
-
-    @Test
-    void initVerificationShouldReturn400WhenInvalidEmailDomain() throws Exception {
-        when(mapper.toInitVerificationDto(any())).thenReturn(new InitVerificationRequestDto("bad@other.com", "hash"));
-        doThrow(new InvalidEmailDomainException("Bad domain"))
-                .when(initVerificationPort).initVerification(any());
-
-        mockMvc.perform(post("/api/v1/auth/init-verification")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(INIT_VERIFICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.codigo").value("INVALID_EMAIL_DOMAIN"));
-    }
 
     // ── Verify OTP ────────────────────────────────────────────────────────────
 

@@ -26,11 +26,11 @@ public class InitVerificationUseCase implements InitVerificationPort {
     /**
      * Generates and sends an OTP to the email provided in the registration request.
      *
-     * @param dto contains the institutional email and hashed password of the new user
+     * @param mail the institutional email of the new user
      */
     @Override
-    public void initVerification(InitVerificationRequestDto dto) {
-        String email = dto.getEmail().trim().toLowerCase();
+    public void initVerification(String mail) {
+        String email = mail.trim().toLowerCase();
         String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
         OtpCache otpCache = OtpCache.builder()

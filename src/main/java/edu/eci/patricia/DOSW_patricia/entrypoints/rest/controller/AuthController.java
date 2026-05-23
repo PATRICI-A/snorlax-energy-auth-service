@@ -16,7 +16,6 @@ import edu.eci.patricia.DOSW_patricia.entrypoints.advice.ErrorResponse;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.mapper.AuthRestMapper;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ChangePasswordRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ForgotPasswordRequest;
-import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.InitVerificationRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.LoginRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.RefreshTokenRequest;
 import edu.eci.patricia.DOSW_patricia.entrypoints.rest.request.ResendOtpRequest;
@@ -107,8 +106,8 @@ public class AuthController {
     })
     @PostMapping("/init-verification")
     public ResponseEntity<RegisterResponseDto> initVerification(
-            @Valid @RequestBody InitVerificationRequest request) {
-        initVerificationPort.initVerification(mapper.toInitVerificationDto(request));
+            @Valid @RequestBody String mail) {
+        initVerificationPort.initVerification(mail);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new RegisterResponseDto("OTP sent to email"));
     }
